@@ -15,6 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 global $zoomcomp_db_version, $notices;
 $notices = [];
 
+// Helper file for development environment.
+if( file_exists( __DIR__ . '/development.php' ) ) include_once __DIR__.'/development.php';
+
+
 /**
  * Main class for the zoom composer plugin.
  */
