@@ -28,6 +28,70 @@ class ZoomComposer {
 		register_activation_hook( __FILE__, [ $this, 'install' ] );
 		add_action( 'admin_init', [ $this, 'deactivate_plugin' ] );
 		add_action( 'admin_notices', [ $this, 'show_notice' ] );
+
+		$this->create_shortcodes();
+	}
+
+	/**
+	 * Register the shortcode for ZoomComposer.
+	 */
+	public function create_shortcodes() {
+		add_shortcode( 'zoomcomp_thumb_hover_zoom_gallery', [ $this, 'shortcode_thumb_hover_zoom_gallery' ] );
+		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_thumb_hover_zoom_item' ] );
+	}
+
+	/**
+	 * Shortcode processor for thumb hover zoom gallery.
+	 */
+	public function shortcode_thumb_hover_zoom_gallery( $atts, $content ) {
+		$content = trim( $content );
+		if( '' == $content ) return '';
+
+		ob_start();
+		?>
+		<div class="thumb_hover_zoom_gallery clearfix">
+			<?php echo do_shortcode( $content ); ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Shortcode processor thumb hover zoom item.
+	 */
+	public function shortcode_thumb_hover_zoom_item( $atts ) {
+
+		extract( shortcode_atts( [
+			'attachment_id' => 0,
+			'alt' => '',
+			'description' => ''	], $atts ) );
+
+		if( 0 == $attachment_id ) return '';
+		$image = wp_get_attachment_image_src( $attachment_id, 'full' );
+		if( !$image ) return '';
+
+		$src = $image[0];
+		$relative_path = wp_make_link_relative( $src );
+		$path_parts = pathinfo( $relative_path );
+		$filename = $path_parts['basename'];
+		$directory = $path_parts['dirname'];
+
+		$zoomload_url = plugins_url( 'axZm/zoomLoad.php', __FILE__ );
+		$zoomload_url = add_query_arg( [
+			'previewPic' => $filename,
+			'previewDir' => $directory,
+			'qual'       => 90,
+			'width'      => 400,
+			'height'     => 300 ], $zoomload_url );
+
+
+		ob_start();
+		?>
+		<div class="block_1">
+		    <img class="azHoverThumb" data-group="cars2" data-descr="" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="" />
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 
