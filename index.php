@@ -45,14 +45,14 @@ class ZoomComposer {
 	public static function install_dir() {
 		
 		$dir = self::dir();
-		if ( ! file_exists( $dir . 'pic' ) ) mkdir( $dir . 'pic', 0766 );
+		if ( ! file_exists( $dir . 'pic' ) ) mkdir( $dir . 'pic', 0755 );
 
 		foreach ( array( '2d', '360', 'cache', 'zoomgallery', 'zoommap', 'zoomthumb', 'zoomtiles_80', 'tmp' ) as $folder ) {
 			$path = $dir . 'pic/' . $folder;
 			if ( ! file_exists( $path )) {
-				mkdir( $path, 0766 );
+				mkdir( $path, 0755 );
 			} else {
-				chmod( $path, 0766 );
+				chmod( $path, 0755 );
 			}
 		}
 	}
