@@ -29,6 +29,7 @@ class ZoomComposer {
 		add_action( 'admin_init', [ $this, 'deactivate_plugin' ] );
 		add_action( 'admin_notices', [ $this, 'show_notice' ] );
 		add_action( 'vc_before_init', [ $this, 'map_shortcodes' ] );
+		add_action( 'init', [ $this, 'add_post_types' ] );
 
 		$this->create_shortcodes();
 	}
@@ -204,7 +205,60 @@ class ZoomComposer {
 		] );
 	}
 
+	/**
+	 * Register custom post type(s).
+	 */
+	public function add_post_types() {
 
+		$labels = array(
+			'name'                  => _x( '360º Galleries', 'Post Type General Name', 'zoomcomp' ),
+			'singular_name'         => _x( '360º Gallery', 'Post Type Singular Name', 'zoomcomp' ),
+			'menu_name'             => __( '360º Galleries', 'zoomcomp' ),
+			'name_admin_bar'        => __( '360º Gallery', 'zoomcomp' ),
+			'archives'              => __( '360º Gallery Archives', 'zoomcomp' ),
+			'parent_item_colon'     => __( 'Parent Item:', 'zoomcomp' ),
+			'all_items'             => __( 'All Galleries', 'zoomcomp' ),
+			'add_new_item'          => __( 'Add New 360º Gallery', 'zoomcomp' ),
+			'add_new'               => __( 'Add New', 'zoomcomp' ),
+			'new_item'              => __( 'New 360º Gallery', 'zoomcomp' ),
+			'edit_item'             => __( 'Edit Gallery', 'zoomcomp' ),
+			'update_item'           => __( 'Update Gallery', 'zoomcomp' ),
+			'view_item'             => __( 'View Gallery', 'zoomcomp' ),
+			'search_items'          => __( 'Search Gallery', 'zoomcomp' ),
+			'not_found'             => __( 'Not found', 'zoomcomp' ),
+			'not_found_in_trash'    => __( 'Not found in Trash', 'zoomcomp' ),
+			'featured_image'        => __( 'Featured Image', 'zoomcomp' ),
+			'set_featured_image'    => __( 'Set featured image', 'zoomcomp' ),
+			'remove_featured_image' => __( 'Remove featured image', 'zoomcomp' ),
+			'use_featured_image'    => __( 'Use as featured image', 'zoomcomp' ),
+			'insert_into_item'      => __( 'Insert into Gallery', 'zoomcomp' ),
+			'uploaded_to_this_item' => __( 'Uploaded to this Gallery', 'zoomcomp' ),
+			'items_list'            => __( 'Items list', 'zoomcomp' ),
+			'items_list_navigation' => __( 'Items list navigation', 'zoomcomp' ),
+			'filter_items_list'     => __( 'Filter items list', 'zoomcomp' ),
+		);
+		$args = array(
+			'label'                 => __( '360º Gallery', 'zoomcomp' ),
+			'labels'                => $labels,
+			'supports'              => array( 'title', ),
+			'hierarchical'          => false,
+			'public'                => true,
+			'show_ui'               => true,
+			'show_in_menu'          => true,
+			'menu_position'         => 20,
+			'menu_icon'             => 'dashicons-images-alt',
+			'show_in_admin_bar'     => true,
+			'show_in_nav_menus'     => false,
+			'can_export'            => false,
+			'has_archive'           => false,		
+			'exclude_from_search'   => true,
+			'publicly_queryable'    => false,
+			'rewrite'               => false,
+			'capability_type'       => 'page',
+		);
+		register_post_type( '360_gallery', $args );
+
+	}
 
 	/**
 	 * Prepare everything needed for ZoomComposer to work.
