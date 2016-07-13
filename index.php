@@ -28,6 +28,7 @@ class ZoomComposer {
 		register_activation_hook( __FILE__, [ $this, 'install' ] );
 		add_action( 'admin_init', [ $this, 'deactivate_plugin' ] );
 		add_action( 'admin_notices', [ $this, 'show_notice' ] );
+		add_action( 'vc_before_init', [ $this, 'map_shortcodes' ] );
 
 		$this->create_shortcodes();
 	}
@@ -123,6 +124,86 @@ class ZoomComposer {
 		<?php
 		return ob_get_clean();
 	}
+
+
+	/**
+	 * Map shortcodes in visual composer.
+	 */
+	public function map_shortcodes() {
+		vc_map( [
+			"name" => __( "Zoom Hover Thumb Gallery", "zoomcomp" ),
+			"base" => "zoomcomp_thumb_hover_zoom_gallery",
+			"show_settings_on_create" => true,
+			"category" => __( "Structure", "zoomcomp"),
+			"params" => [
+				[
+					"type" => "textfield",
+					"heading" => __( "Item Width", "zoomcomp" ),
+					"param_name" => "thumb_width",
+					'value' => 400,
+					"description" => __( "Default width of items inside it(number of pixels).", "zoomcomp" )
+				],
+				[
+					"type" => "textfield",
+					"heading" => __( "Item Height", "zoomcomp" ),
+					"param_name" => "thumb_height",
+					'value' => 400,
+					"description" => __( "Default height of items inside it(number of pixels).", "zoomcomp" )
+				],
+				[
+					"type" => "textfield",
+					"heading" => __( "Item group", "zoomcomp" ),
+					"param_name" => "thumb_group",
+					"value" => ''
+				],
+				[
+					"type" => "attach_images",
+					"heading" => __( "Images", "zoomcomp" ),
+					"param_name" => "images"
+				]
+			]
+		] );
+
+		vc_map( [
+			"name" => __( "Zoom Hover Thumb Image", "zoomcomp" ),
+			"base" => "zoomcomp_thumb_hover_zoom_item",
+			"category" => __( "Content", "zoomcomp"),
+			"params" => [
+				[
+					"type" => "textfield",
+					"heading" => __( "Item Width", "zoomcomp" ),
+					"param_name" => "thumb_width",
+					'value' => 400,
+					"description" => __( "Width of items(number of pixels).", "zoomcomp" )
+				],
+				[
+					"type" => "textfield",
+					"heading" => __( "Item Height", "zoomcomp" ),
+					"param_name" => "thumb_height",
+					'value' => 400,
+					"description" => __( "Height of items(number of pixels).", "zoomcomp" )
+				],
+				[
+					"type" => "textfield",
+					"heading" => __( "Item group", "zoomcomp" ),
+					"param_name" => "thumb_group",
+					"value" => ''
+				],
+				[
+					"type" => "textfield",
+					"heading" => __( "Image quality (1-100)", "zoomcomp" ),
+					"param_name" => "image_quality",
+					"value" => '90'
+				],
+				[
+					"type" => "attach_image",
+					"heading" => __( "Image", "zoomcomp" ),
+					"param_name" => "attachment_id"
+				]
+			]
+		] );
+	}
+
 
 
 	/**
@@ -231,6 +312,15 @@ class ZoomComposer {
 		return plugin_dir_path( __FILE__ );
 	}
 }
+
+
+if ( class_exists( 'WPBakeryShortCode' ) ) {
+	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Gallery extends WPBakeryShortCode {
+	}
+	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Item extends WPBakeryShortCode {
+	}
+}
+
 
 global $zoomComposer;
 $zoomComposer = new ZoomComposer;
