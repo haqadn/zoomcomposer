@@ -79,17 +79,14 @@ class ZoomComposer {
 	 */
 	public function shortcode_thumb_hover_zoom_item( $atts ) {
 
-
 		global $thumb_dimention, $thumb_group;
 		if( !isset( $thumb_group ) ) $thumb_group = '';
 		extract( shortcode_atts( [
-			'thumb_width'      => 400,
-			'thumb_height'     => 400 ], $thumb_dimention ) );
+			'thumb_width'   => 400,
+			'thumb_height'  => 400 ], $thumb_dimention ) );
 
 		extract( shortcode_atts( [
 			'attachment_id' => 0,
-			'alt'           => '',
-			'description'   => '',
 			'image_quality' => 90,
 			'thumb_width'   => $thumb_width,
 			'thumb_height'  => $thumb_height,
@@ -110,15 +107,18 @@ class ZoomComposer {
 		$zoomload_url = add_query_arg( [
 			'previewPic' => $filename,
 			'previewDir' => $directory,
-			'qual'       => $image_quality,
-			'width'      => $thumb_width,
-			'height'     => $thumb_height ], $zoomload_url );
+			'qual'	   => $image_quality,
+			'width'	  => $thumb_width,
+			'height'	 => $thumb_height ], $zoomload_url );
 
+		$attachment = get_post( $attachment_id );
+		$alt = get_post_meta( $attachment->ID, '_wp_attachment_image_alt', true );
+		$description = htmlspecialchars( $attachment->post_excerpt );
 
 		ob_start();
 		?>
 		<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
-		    <img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
+			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
 		</div>
 		<?php
 		return ob_get_clean();
