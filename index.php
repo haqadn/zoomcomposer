@@ -47,9 +47,18 @@ class ZoomComposer {
 		$content = trim( $content );
 		if( '' == $content ) return '';
 
+		global $thumb_dimention, $thumb_group;
+
+		extract( shortcode_atts( [
+			'thumb_width'      => 400,
+			'thumb_height'     => 400,
+			'thumb_group'      => '' ], $atts ) );
+
+		$thumb_dimention = [ 'thumb_width' => $thumb_width, 'thumb_height' => $thumb_height ];
+
 		ob_start();
 		?>
-		<div class="thumb_hover_zoom_gallery clearfix">
+		<div class="thumbHoverZoomGallery clearfix">
 			<?php echo do_shortcode( $content ); ?>
 		</div>
 		<?php
@@ -61,10 +70,22 @@ class ZoomComposer {
 	 */
 	public function shortcode_thumb_hover_zoom_item( $atts ) {
 
+
+		global $thumb_dimention, $thumb_group;
+		if( !isset( $thumb_group ) ) $thumb_group = '';
+		extract( shortcode_atts( [
+			'thumb_width'      => 400,
+			'thumb_height'     => 400 ], $thumb_dimention ) );
+
 		extract( shortcode_atts( [
 			'attachment_id' => 0,
-			'alt' => '',
-			'description' => ''	], $atts ) );
+			'alt'           => '',
+			'description'   => '',
+			'image_quality' => 90,
+			'thumb_width'   => $thumb_width,
+			'thumb_height'  => $thumb_height,
+			'thumb_group'   => $thumb_group ], $atts ), EXTR_OVERWRITE );
+
 
 		if( 0 == $attachment_id ) return '';
 		$image = wp_get_attachment_image_src( $attachment_id, 'full' );
@@ -80,15 +101,15 @@ class ZoomComposer {
 		$zoomload_url = add_query_arg( [
 			'previewPic' => $filename,
 			'previewDir' => $directory,
-			'qual'       => 90,
-			'width'      => 400,
-			'height'     => 300 ], $zoomload_url );
+			'qual'       => $image_quality,
+			'width'      => $thumb_width,
+			'height'     => $thumb_height ], $zoomload_url );
 
 
 		ob_start();
 		?>
-		<div class="block_1">
-		    <img class="azHoverThumb" data-group="cars2" data-descr="" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="" />
+		<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
+		    <img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
 		</div>
 		<?php
 		return ob_get_clean();
