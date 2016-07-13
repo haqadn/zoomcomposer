@@ -45,14 +45,23 @@ class ZoomComposer {
 	 */
 	public function shortcode_thumb_hover_zoom_gallery( $atts, $content ) {
 		$content = trim( $content );
-		if( '' == $content ) return '';
 
 		global $thumb_dimention, $thumb_group;
 
 		extract( shortcode_atts( [
 			'thumb_width'      => 400,
 			'thumb_height'     => 400,
-			'thumb_group'      => '' ], $atts ) );
+			'thumb_group'      => '',
+			'images'           => false ], $atts ) );
+
+		if( $images ){
+			$images = explode( ',', $images );
+			$images = array_map( function($image_id) {
+				return "[zoomcomp_thumb_hover_zoom_item attachment_id='$image_id']";
+			}, $images);
+
+			$content = implode( "\n", $images );
+		}
 
 		$thumb_dimention = [ 'thumb_width' => $thumb_width, 'thumb_height' => $thumb_height ];
 
