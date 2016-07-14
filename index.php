@@ -266,6 +266,7 @@ class ZoomComposer {
 	public static function install() {
 		self::install_dir();
 		self::install_axzm();
+		self::install_config();
 	}
 
 	/**
@@ -274,10 +275,10 @@ class ZoomComposer {
 	public static function install_dir() {
 		
 		$dir = self::dir();
-		if ( ! file_exists( $dir . 'pic' ) ) mkdir( $dir . 'pic', 0755 );
+		if ( ! file_exists( $dir . '../../uploads/zoomcomp' ) ) mkdir( $dir . '../../uploads/zoomcomp', 0755 );
 
 		foreach ( array( '2d', '360', 'cache', 'zoomgallery', 'zoommap', 'zoomthumb', 'zoomtiles_80', 'tmp' ) as $folder ) {
-			$path = $dir . 'pic/' . $folder;
+			$path = $dir . '../../uploads/zoomcomp/' . $folder;
 			if ( ! file_exists( $path )) {
 				mkdir( $path, 0755 );
 			} else {
@@ -305,6 +306,14 @@ class ZoomComposer {
 
 			rename( $dir . 'pic/tmp/axZm', $dir . 'axZm' );
 		}
+	}
+
+	/**
+	 * Copy the config file to place when installed.
+	 */
+	public static function install_config() {
+		if( !copy( __DIR__ . '/zoomConfigCustom.inc.php',  __DIR__ . '/axZm/zoomConfigCustom.inc.php' ) )
+			self::notice( 'error', __( 'Unable to copy config file. Please copy zoomConfigCustom.inc.php to axZm directory manually.', 'zoomcomp' ) );
 	}
 
 	/**
