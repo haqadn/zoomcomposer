@@ -30,6 +30,9 @@ class ZoomComposer {
 		add_action( 'admin_notices', [ $this, 'show_notice' ] );
 		add_action( 'vc_before_init', [ $this, 'map_shortcodes' ] );
 		add_action( 'init', [ $this, 'add_post_types' ] );
+		add_action( 'add_meta_boxes', [ $this, 'add_360_gallery_metaboxes' ] );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+		add_action( 'wp_ajax_upload_gallery_image', [ $this, 'process_upload_gallery_image' ]);
 
 		$this->create_shortcodes();
 	}
@@ -261,6 +264,75 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Add metabox to 360_gallery
+	 */
+	public function add_360_gallery_metaboxes() {
+		add_meta_box( 'gallery_images', 'Images', [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
+	}
+
+	/**
+	 * Set the metabox content for 360 gallery image uploader.
+	 */
+	public function gallery_image_upload_metabox_content() {
+		global $post;
+		?>
+		<div class="gallery-image-upload">
+			<p class="dz-message">Drag &amp; drop your image here or click to upload.</p>
+		</div>
+		<ul class="existing-images">
+			<?php 
+			$upload_dir = wp_upload_dir();
+			if( file_exists( self::pic_dir().'/360/'.$post->ID ) ){
+				foreach( glob(self::pic_dir().'/360/'.$post->ID."/*.*") as $filename ){
+					$filename = wp_basename($filename);
+					echo "<li><img src='".$upload_dir['baseurl'].'/zoomcomp/360/'.$post->ID."/$filename'></li>";
+				}
+			}
+			?>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Handles the upload of gallery image.
+	 */
+	public function process_upload_gallery_image() {
+		header('Content-Type: application/json');
+
+		$action = 'upload_gallery_image';
+
+		global $zoomcomp_upload_dir;
+		$zoomcomp_upload_dir = '/zoomcomp/360/'.$_POST['post_id'];
+
+		add_filter( 'upload_dir', [$this, 'filter_pic_directory'] );
+		$upload = wp_handle_upload( $_FILES['file'], ['action' => $action] );
+		remove_filter( 'upload_dir', [$this, 'filter_pic_directory'] );
+
+		echo json_encode( ['success' => true, 'url' => $upload['url']] );
+
+		exit;
+	}
+
+	/**
+	 * Enqueue javascript and css files on back-end.
+	 */
+	public function enqueue_admin_scripts() {
+
+		wp_enqueue_script( 'jquery' );
+
+		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
+		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
+
+		wp_enqueue_script( 'dropzone', plugins_url( 'js/dropzone.min.js', __FILE__ ), [ 'jquery' ] );
+		wp_enqueue_script( 'dropzone-amd-module', plugins_url( 'js/dropzone-amd-module.min.js', __FILE__ ), [ 'jquery' ] );
+		wp_enqueue_style( 'dropzone', plugins_url( 'css/dropzone.min.css', __FILE__ ) );
+
+		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery' ] );
+		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
+
+	}
+
+	/**
 	 * Prepare everything needed for ZoomComposer to work.
 	 */
 	public static function install() {
@@ -379,6 +451,16 @@ class ZoomComposer {
 		$upload_dir = wp_upload_dir();
 
 		return trailingslashit( $upload_dir['basedir'] ) . 'zoomcomp';
+	}
+
+	public function filter_pic_directory( $dirs ) {
+		global $zoomcomp_upload_dir;
+
+		$dirs['subdir'] = $zoomcomp_upload_dir;
+		$dirs['path'] = $dirs['basedir'] . $zoomcomp_upload_dir;
+		$dirs['url'] = $dirs['baseurl'] . $zoomcomp_upload_dir;
+
+		return $dirs;
 	}
 }
 
