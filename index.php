@@ -274,11 +274,11 @@ class ZoomComposer {
 	 */
 	public static function install_dir() {
 		
-		$dir = self::dir();
-		if ( ! file_exists( $dir . '../../uploads/zoomcomp' ) ) mkdir( $dir . '../../uploads/zoomcomp', 0755 );
+		$dir = self::pic_dir();
+		if ( ! file_exists( $dir ) ) mkdir( $dir, 0755 );
 
 		foreach ( array( '2d', '360', 'cache', 'zoomgallery', 'zoommap', 'zoomthumb', 'zoomtiles_80', 'tmp' ) as $folder ) {
-			$path = $dir . '../../uploads/zoomcomp/' . $folder;
+			$path = $dir . '/' . $folder;
 			if ( ! file_exists( $path )) {
 				mkdir( $path, 0755 );
 			} else {
@@ -295,16 +295,16 @@ class ZoomComposer {
 		$dir = self::dir();
 		if ( ! file_exists( $dir . 'axZm' ) && ini_get( 'allow_url_fopen' ) ) {
 			$remoteFileContents = file_get_contents( 'http://www.ajax-zoom.com/download.php?ver=latest&module=woo' );
-			$localFilePath = $dir . 'pic/tmp/jquery.ajaxZoom_ver_latest.zip';
+			$localFilePath = self::pic_dir() . '/tmp/jquery.ajaxZoom_ver_latest.zip';
 
 			file_put_contents( $localFilePath, $remoteFileContents );
 
 			$zip = new \ZipArchive();
 			$res = $zip->open( $localFilePath );
-			$zip->extractTo( $dir . 'pic/tmp/' );
+			$zip->extractTo( self::pic_dir() . '/tmp/' );
 			$zip->close();
 
-			rename( $dir . 'pic/tmp/axZm', $dir . 'axZm' );
+			rename( self::pic_dir() . '/tmp/axZm', $dir . 'axZm' );
 		}
 	}
 
@@ -373,6 +373,12 @@ class ZoomComposer {
 
 	public static function dir() {
 		return plugin_dir_path( __FILE__ );
+	}
+
+	public static function pic_dir() {
+		$upload_dir = wp_upload_dir();
+
+		return trailingslashit( $upload_dir['basedir'] ) . 'zoomcomp';
 	}
 }
 
