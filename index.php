@@ -123,7 +123,6 @@ class ZoomComposer {
 		return ob_get_clean();
 	}
 
-
 	/**
 	 * Map shortcodes in visual composer.
 	 */
@@ -323,6 +322,9 @@ class ZoomComposer {
 		exit;
 	}
 
+	/**
+	 * Generate a link to thumbnail that is provided with axZm.
+	 */
 	public function make_thumb_link( $image_url, $atts = array() ){
 		$src = $image_url;
 		$relative_path = wp_make_link_relative( $src );
@@ -485,18 +487,25 @@ class ZoomComposer {
 		}
 	}
 
-
-
+	/**
+	 * Provides plugin directory.
+	 */
 	public static function dir() {
 		return plugin_dir_path( __FILE__ );
 	}
 
+	/**
+	 * The directory where all zoomcomposer files are stored.
+	 */
 	public static function pic_dir() {
 		$upload_dir = wp_upload_dir();
 
 		return trailingslashit( $upload_dir['basedir'] ) . 'zoomcomp';
 	}
 
+	/**
+	 * Change the directory of upload to be used with filters. Store files in the zoomcomp folder instead of default wp structure.
+	 */
 	public function filter_pic_directory( $dirs ) {
 		global $zoomcomp_upload_dir;
 
@@ -510,10 +519,8 @@ class ZoomComposer {
 
 
 if ( class_exists( 'WPBakeryShortCode' ) ) {
-	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Gallery extends WPBakeryShortCode {
-	}
-	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Item extends WPBakeryShortCode {
-	}
+	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Gallery extends WPBakeryShortCode {}
+	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Item extends WPBakeryShortCode {}
 }
 
 
