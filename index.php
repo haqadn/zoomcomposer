@@ -102,19 +102,12 @@ class ZoomComposer {
 		$image = wp_get_attachment_image_src( $attachment_id, 'full' );
 		if( !$image ) return '';
 
-		$src = $image[0];
-		$relative_path = wp_make_link_relative( $src );
-		$path_parts = pathinfo( $relative_path );
-		$filename = $path_parts['basename'];
-		$directory = $path_parts['dirname'];
-
-		$zoomload_url = plugins_url( 'axZm/zoomLoad.php', __FILE__ );
-		$zoomload_url = add_query_arg( [
-			'previewPic' => $filename,
-			'previewDir' => $directory,
-			'qual'	   => $image_quality,
-			'width'	  => $thumb_width,
-			'height'	 => $thumb_height ], $zoomload_url );
+		$zoomload_url = $this->make_thumb_link( $image[0], [
+			'qual'      => $image_quality,
+			'width'     => $thumb_width,
+			'height'    => $thumb_height,
+			'thumbMode' => 'cover'
+		] );
 
 		$attachment = get_post( $attachment_id );
 		$alt = get_post_meta( $attachment->ID, '_wp_attachment_image_alt', true );
@@ -123,7 +116,7 @@ class ZoomComposer {
 		ob_start();
 		?>
 		<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
-			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $relative_path; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
+			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $image[0]; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
 		</div>
 		<?php
 		return ob_get_clean();
@@ -311,6 +304,23 @@ class ZoomComposer {
 		echo json_encode( ['success' => true, 'url' => $upload['url']] );
 
 		exit;
+	}
+
+	public function make_thumb_link( $image_url, $atts = array() ){
+		$src = $image_url;
+		$relative_path = wp_make_link_relative( $src );
+		$path_parts = pathinfo( $relative_path );
+		$filename = $path_parts['basename'];
+		$directory = $path_parts['dirname'];
+
+		$zoomload_url = plugins_url( 'axZm/zoomLoad.php', __FILE__ );
+		$args = array_merge(
+			[
+				'previewPic' => $filename,
+				'previewDir' => $directory,
+			], $atts );
+
+		return add_query_arg( $args, $zoomload_url );
 	}
 
 	/**
