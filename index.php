@@ -32,6 +32,7 @@ class ZoomComposer {
 		add_action( 'init', [ $this, 'add_post_types' ] );
 		add_action( 'add_meta_boxes', [ $this, 'add_360_gallery_metaboxes' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'wp_ajax_upload_gallery_image', [ $this, 'process_upload_gallery_image' ]);
 
 		$this->create_shortcodes();
@@ -354,6 +355,23 @@ class ZoomComposer {
 		wp_enqueue_style( 'dropzone', plugins_url( 'css/dropzone.min.css', __FILE__ ) );
 
 		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery' ] );
+		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
+
+	}
+
+	/**
+	 * Scripts and styles enqueued for front end.
+	 */
+	public function enqueue_scripts (){
+		wp_enqueue_script( 'jquery' );
+
+		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
+		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
+		
+		wp_enqueue_script( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.js', __FILE__ ) );
+		wp_enqueue_style( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.css', __FILE__ ) );
+
+		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ) );
 		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
 
 	}
