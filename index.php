@@ -278,7 +278,14 @@ class ZoomComposer {
 			if( file_exists( self::pic_dir().'/360/'.$post->ID ) ){
 				foreach( glob(self::pic_dir().'/360/'.$post->ID."/*.*") as $filename ){
 					$filename = wp_basename($filename);
-					echo "<li><img src='".$upload_dir['baseurl'].'/zoomcomp/360/'.$post->ID."/$filename'></li>";
+					$image_url = $this->make_thumb_link( $upload_dir['baseurl'].'/zoomcomp/360/'.$post->ID."/$filename", [
+						'qual'       => 80,
+						'width'      => 70,
+						'height'     => 70,
+						'cache'      => false,
+						'thumbMode'  => 'cover'
+					]);
+					echo "<li><img src='$image_url'></li>";
 				}
 			}
 			?>
@@ -301,7 +308,16 @@ class ZoomComposer {
 		$upload = wp_handle_upload( $_FILES['file'], ['action' => $action] );
 		remove_filter( 'upload_dir', [$this, 'filter_pic_directory'] );
 
-		echo json_encode( ['success' => true, 'url' => $upload['url']] );
+
+		$url = $this->make_thumb_link( $upload['url'], [
+			'qual'       => 80,
+			'width'      => 70,
+			'height'     => 70,
+			'cache'      => false,
+			'thumbMode'  => 'cover'
+		] );
+
+		echo json_encode( ['success' => true, 'url' => $url] );
 
 		exit;
 	}
