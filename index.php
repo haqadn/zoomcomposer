@@ -34,6 +34,8 @@ class ZoomComposer {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'wp_ajax_upload_gallery_image', [ $this, 'process_upload_gallery_image' ]);
+		add_action( 'save_post', [ $this, 'update_gallery_images' ]);
+		add_action( 'delete_post', [ $this, 'delete_gallery_images' ]);
 
 		$this->create_shortcodes();
 	}
@@ -282,13 +284,24 @@ class ZoomComposer {
 						'qual'       => 80,
 						'width'      => 70,
 						'height'     => 70,
-						'cache'      => false,
-						'thumbMode'  => 'cover'
+						'cache'      => 0,
+						'thumbMode'  => 'cover',
+						'timestamp'  => time()
 					]);
-					echo "<li><img src='$image_url'></li>";
+
+					?>
+					<li>
+						<img src='<?php echo $image_url; ?>'>
+						<input type='hidden' name='gallery_filename[]' value='<?php echo $filename; ?>'/>
+						<input type='hidden' class="remove-flag" name='gallery_removed[]' value='no'/>
+						<br style="clear:both">
+					</li>
+					<?php
 				}
 			}
 			?>
+			<br style="clear:both">
+			
 		</ul>
 		<?php
 	}
@@ -313,13 +326,64 @@ class ZoomComposer {
 			'qual'       => 80,
 			'width'      => 70,
 			'height'     => 70,
-			'cache'      => false,
-			'thumbMode'  => 'cover'
+			'cache'      => 0,
+			'thumbMode'  => 'cover',
+			'timestamp'  => time()
 		] );
 
-		echo json_encode( ['success' => true, 'url' => $url] );
+		echo json_encode( ['success' => true, 'url' => $url, 'filename' => wp_basename($upload['url'])] );
 
 		exit;
+	}
+
+	/**
+	 * Update the image file names for gallery.
+	 */
+	public function update_gallery_images( $post_id ) {
+
+		if( !isset( $_POST['gallery_filename'] ) || !isset( $_POST['gallery_removed'] ) ) return;
+		$dir = self::pic_dir().'/360/'.$post_id;
+		$temp_dir = $dir.'_temp';
+
+		if( file_exists( $temp_dir ) )
+			rmdir( $temp_dir );
+
+		if( file_exists( $dir ) )
+			rename( $dir, $temp_dir );
+		mkdir( $dir, 0755 );
+
+
+		$filenames = $_POST['gallery_filename'];
+		$remove_file = $_POST['gallery_removed'];
+
+
+		for( $i = 0; $i < count( $filenames ); $i++ ){
+			$pathinfo = pathinfo( $filenames[$i] );
+			$new_name = strrev( $post_id ) . '_' . str_pad($i,4,"0",STR_PAD_LEFT);
+
+			if( $remove_file[$i] != 'yes' )
+				rename( $temp_dir.'/'.$filenames[$i], $dir.'/'.$new_name.'.'.$pathinfo['extension'] );
+			else
+				unlink( $temp_dir.'/'.$filenames[$i] );
+
+			array_map('unlink', glob(self::pic_dir().'/cache/'.$pathinfo['filename'][0].'/'.$pathinfo['filename'][1].'/'.$pathinfo['filename'].'*.'.$pathinfo['extension']));
+		}
+
+		if( file_exists( $temp_dir ) )
+			rmdir( $temp_dir );
+
+	}
+
+	/**
+	 * Delete gallery images and all the files related to it.
+	 */
+	public function delete_gallery_images( $post_id ){
+		$dir = self::pic_dir().'/360/'.$post_id;
+		$file_prefix = strrev($post_id);
+
+		array_map('unlink', glob($dir.'/*.*'));
+		rmdir( $dir );
+		array_map('unlink', glob(self::pic_dir().'/cache/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
 	}
 
 	/**
@@ -348,6 +412,7 @@ class ZoomComposer {
 	public function enqueue_admin_scripts() {
 
 		wp_enqueue_script( 'jquery' );
+		wp_enqueue_script( 'jquery-ui-sortable' );
 
 		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
 		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
@@ -356,7 +421,7 @@ class ZoomComposer {
 		wp_enqueue_script( 'dropzone-amd-module', plugins_url( 'js/dropzone-amd-module.min.js', __FILE__ ), [ 'jquery' ] );
 		wp_enqueue_style( 'dropzone', plugins_url( 'css/dropzone.min.css', __FILE__ ) );
 
-		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery' ] );
+		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery', 'jquery-ui-sortable' ] );
 		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
 
 	}

@@ -11,6 +11,17 @@
 				// autoProcessQueue: false
 			});
 
+			function toggle_remove() {
+				$(this).toggleClass('removed');
+
+				if( $(this).hasClass('removed') ){
+					$(this).find(".remove-flag").val('yes');
+				}
+				else {
+					$(this).find(".remove-flag").val('no');
+				}
+			}
+
 			if( $(".gallery-image-upload").length ){
 				var dzObj = Dropzone.forElement(".gallery-image-upload");
 
@@ -23,7 +34,16 @@
 				on('success', function(file, response){
 					dzObj.removeFile(file);
 
-					$('.existing-images').append('<li><img src="'+response.url+'"></li>');
+					var new_item = $('<li/>').insertBefore( $('.existing-images > br') );
+					new_item.append('<img src="'+response.url+'">');
+					new_item.append('<input type="hidden" name="gallery_filename[]" value="'+response.filename+'" />');
+					new_item.append('<input type="hidden" class="remove-flag" name="gallery_removed[]" value="no" />');
+					new_item.append('<br style="clear:both" />');
+
+					new_item.click(toggle_remove)
+
+
+					$('#gallery_images .existing-images').sortable("refresh");
 				}).
 				on('sending', function(file, request, formData){
 					formData.append("action", "upload_gallery_image");
@@ -32,6 +52,10 @@
 
 				Dropzone.autoDiscover = false;
 			}
+
+			$('#gallery_images .existing-images')
+				.sortable()
+				.children('li').click(toggle_remove);
 		}
 	})
 })(jQuery);

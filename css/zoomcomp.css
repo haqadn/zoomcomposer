@@ -9,6 +9,35 @@
 
 }
 
+#gallery_images .existing-images {
+  clear: both;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+#gallery_images .existing-images li {
+  float: left;
+  margin: 10px;
+}
+
+#gallery_images .existing-images li.removed img {
+  opacity: 0.3;
+}
+
+#gallery_images .existing-images li.removed::after {
+  content: "x";
+  color: red;
+  margin-top: -25px;
+  display: block;
+  float: left;
+  margin-left: 5px;
+  font-size: 30px;
+}
+
+#gallery_images .existing-images li img {
+  float: left;
+}
+
 .gallery-image-upload, .gallery-image-upload * {
   box-sizing: border-box; }
 
