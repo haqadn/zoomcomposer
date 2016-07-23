@@ -449,7 +449,6 @@ class ZoomComposer {
 	public static function install() {
 		self::install_dir();
 		self::install_axzm();
-		self::install_config();
 	}
 
 	/**
@@ -489,14 +488,6 @@ class ZoomComposer {
 
 			rename( self::pic_dir() . '/tmp/axZm', $dir . 'axZm' );
 		}
-	}
-
-	/**
-	 * Copy the config file to place when installed.
-	 */
-	public static function install_config() {
-		if( !copy( __DIR__ . '/zoomConfigCustom.inc.php',  __DIR__ . '/axZm/zoomConfigCustom.inc.php' ) )
-			self::notice( 'error', __( 'Unable to copy config file. Please copy zoomConfigCustom.inc.php to axZm directory manually.', 'zoomcomp' ) );
 	}
 
 	/**
