@@ -408,6 +408,15 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Output content of gallery metabox.
+	 */
+	public function gallery_metabox_content() {
+
+		echo '<div id="AZplayerParentContainer" style=""></div>';
+		echo '<br style="clear:both" />';
+	}
+
+	/**
 	 * Generate a link to thumbnail that is provided with axZm.
 	 */
 	public function make_thumb_link( $image_url, $atts = array() ){
@@ -432,6 +441,8 @@ class ZoomComposer {
 	 */
 	public function enqueue_admin_scripts() {
 
+		global $pagenow, $post;
+
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'jquery-ui-sortable' );
 
@@ -442,8 +453,19 @@ class ZoomComposer {
 		wp_enqueue_script( 'dropzone-amd-module', plugins_url( 'js/dropzone-amd-module.min.js', __FILE__ ), [ 'jquery' ] );
 		wp_enqueue_style( 'dropzone', plugins_url( 'css/dropzone.min.css', __FILE__ ) );
 
-		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery', 'jquery-ui-sortable' ] );
+		wp_register_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery', 'jquery-ui-sortable' ] );
 		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
+
+		if( in_array( $pagenow, array( 'post.php', 'post-new.php' ) ) && $post->post_type == '360_gallery' ){
+			wp_localize_script( 'zoomcomposer', 'zoomcomp', [
+				'azParam' => http_build_query([
+					'3dDir' => self::pic_dir().'/360/'.$post->ID,
+					'cache' => 0
+				])
+			]);
+		}
+
+		wp_enqueue_script( 'zoomcomposer' );
 
 	}
 

@@ -53,6 +53,25 @@
 				Dropzone.autoDiscover = false;
 			}
 
+			if( $("#AZplayerParentContainer").length ){
+				
+				// Create empty object
+				var ajaxZoom = {}; 
+
+				// Define callbacks, for complete list check the docs
+				ajaxZoom.opt = {};
+
+				// Get path to images folder
+				ajaxZoom.parameter = zoomcomp.azParam; 
+
+				// The ID of the element where ajax-zoom has to be inserted into
+				ajaxZoom.divID = "AZplayerParentContainer";
+				ajaxZoom.galleryWidth = "1000";
+
+
+				jQuery.fn.axZm.openFullScreen(ajaxZoom.path, ajaxZoom.parameter, ajaxZoom.opt, ajaxZoom.divID, false, false);
+			}
+
 			$('#gallery_images .existing-images')
 				.sortable()
 				.children('li').click(toggle_remove);
