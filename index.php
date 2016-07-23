@@ -382,6 +382,13 @@ class ZoomComposer {
 		if( file_exists( $temp_dir ) )
 			rmdir( $temp_dir );
 
+		// Remove generated images
+		$file_prefix = strrev($post_id);
+		array_map('unlink', glob(self::pic_dir().'/cache/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoommap/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoomthumb/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoomtiles_80/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*/*.*'));
+		array_map('rmdir', glob(self::pic_dir().'/zoomtiles_80/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*'));
 	}
 
 	/**
@@ -392,8 +399,12 @@ class ZoomComposer {
 		$file_prefix = strrev($post_id);
 
 		array_map('unlink', glob($dir.'/*.*'));
-		rmdir( $dir );
+		if( file_exists( $dir ) ) rmdir( $dir );
 		array_map('unlink', glob(self::pic_dir().'/cache/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoommap/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoomthumb/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*.*'));
+		array_map('unlink', glob(self::pic_dir().'/zoomtiles_80/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*/*.*'));
+		array_map('rmdir', glob(self::pic_dir().'/zoomtiles_80/'.$file_prefix[0].'/'.$file_prefix[1].'/'.$file_prefix.'_*'));
 	}
 
 	/**
