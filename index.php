@@ -262,7 +262,17 @@ class ZoomComposer {
 	 * Add metabox to 360_gallery
 	 */
 	public function add_360_gallery_metaboxes() {
+
+		global $post;
+
+		if( $post->post_type != '360_gallery' ) return;
+
+		$upload_dir = wp_upload_dir();
+
 		add_meta_box( 'gallery_images', 'Images', [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
+		$zoomcomp_upload_dir = $upload_dir['basedir'].'/zoomcomp/360/'.$post->ID;
+		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) )
+			add_meta_box( 'gallery_360', 'Gallery', [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
 	}
 
 	/**
