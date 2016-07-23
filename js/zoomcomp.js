@@ -12,14 +12,19 @@
 			});
 
 			function toggle_remove() {
-				$(this).toggleClass('removed');
+				$(this).parent().toggleClass('removed');
 
-				if( $(this).hasClass('removed') ){
-					$(this).find(".remove-flag").val('yes');
+				if( $(this).parent().hasClass('removed') ){
+					$(this).parent().find(".remove-flag").val('yes');
 				}
 				else {
-					$(this).find(".remove-flag").val('no');
+					$(this).parent().find(".remove-flag").val('no');
 				}
+			}
+
+			function navigate_frame() {
+				var img_name = $(this).find('[name="gallery_filename[]"]').val();
+				$.fn.axZm.spinTo(img_name, 'auto', 'easeOutCubic');
 			}
 
 			if( $(".gallery-image-upload").length ){
@@ -35,12 +40,14 @@
 					dzObj.removeFile(file);
 
 					var new_item = $('<li/>').insertBefore( $('.existing-images > br') );
+					var remove_btn = $('<span class="remove-btn">x</span>').appendTo(new_item);
 					new_item.append('<img src="'+response.url+'">');
 					new_item.append('<input type="hidden" name="gallery_filename[]" value="'+response.filename+'" />');
 					new_item.append('<input type="hidden" class="remove-flag" name="gallery_removed[]" value="no" />');
 					new_item.append('<br style="clear:both" />');
 
-					new_item.click(toggle_remove)
+					remove_btn.click(toggle_remove);
+					new_item.click(navigate_frame);
 
 
 					$('#gallery_images .existing-images').sortable("refresh");
@@ -74,7 +81,8 @@
 
 			$('#gallery_images .existing-images')
 				.sortable()
-				.children('li').click(toggle_remove);
+				.children('li').click(navigate_frame)
+				.find('.remove-btn').click(toggle_remove);
 		}
 	})
 })(jQuery);

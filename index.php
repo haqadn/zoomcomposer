@@ -301,6 +301,7 @@ class ZoomComposer {
 
 					?>
 					<li>
+						<span class="remove-btn">x</span>
 						<img src='<?php echo $image_url; ?>'>
 						<input type='hidden' name='gallery_filename[]' value='<?php echo $filename; ?>'/>
 						<input type='hidden' class="remove-flag" name='gallery_removed[]' value='no'/>

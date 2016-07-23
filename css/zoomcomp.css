@@ -18,20 +18,33 @@
 #gallery_images .existing-images li {
   float: left;
   margin: 10px;
+  position: relative;
 }
 
 #gallery_images .existing-images li.removed img {
   opacity: 0.3;
 }
 
-#gallery_images .existing-images li.removed::after {
-  content: "x";
-  color: red;
-  margin-top: -25px;
+#gallery_images .existing-images li .remove-btn {
+  cursor: pointer;
+  display: none;
+  float: right;
+  position: absolute;
+  background-color: rgba(0,0,0, 0.2);
+  color: #FFF;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  text-align: center;
+  line-height: 14px;
+  border-radius: 50%;
+  right: 0;
+  z-index: 100;
+}
+
+#gallery_images .existing-images li:hover .remove-btn,
+#gallery_images .existing-images li.removed .remove-btn {
   display: block;
-  float: left;
-  margin-left: 5px;
-  font-size: 30px;
 }
 
 #gallery_images .existing-images li img {
