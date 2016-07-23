@@ -119,7 +119,7 @@ class ZoomComposer {
 		ob_start();
 		?>
 		<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
-			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo $image[0]; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
+			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo wp_make_link_relative( $image[0] ); ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
 		</div>
 		<?php
 		return ob_get_clean();
