@@ -8,6 +8,7 @@
 				uploadMultiple: false,
 				addRemoveLinks: true,
 				acceptedFiles: 'image/*',
+				parallelUploads: 1
 				// autoProcessQueue: false
 			});
 
