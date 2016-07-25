@@ -269,10 +269,10 @@ class ZoomComposer {
 
 		$upload_dir = wp_upload_dir();
 
-		add_meta_box( 'gallery_images', 'Images', [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
+		add_meta_box( 'gallery_images', __( 'Images', 'zoomcomp' ), [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
 		$zoomcomp_upload_dir = $upload_dir['basedir'].'/zoomcomp/360/'.$post->ID;
 		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) )
-			add_meta_box( 'gallery_360', 'Gallery', [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
+			add_meta_box( 'gallery_360', __( 'Gallery', 'zoomcomp' ), [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
 	}
 
 	/**
@@ -282,7 +282,7 @@ class ZoomComposer {
 		global $post;
 		?>
 		<div class="gallery-image-upload">
-			<p class="dz-message">Drag &amp; drop your image here or click to upload.</p>
+			<p class="dz-message"><?php _e( 'Drag & drop your image here or click to upload.', 'zoomcomp' ); ?></p>
 		</div>
 		<ul class="existing-images">
 			<?php 
