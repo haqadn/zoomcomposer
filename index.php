@@ -34,7 +34,9 @@ class ZoomComposer {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'wp_ajax_upload_gallery_image', [ $this, 'process_upload_gallery_image' ]);
+		add_action( 'wp_ajax_get_hotspot_json', [ $this, 'output_hotspot_json' ]);
 		add_action( 'save_post', [ $this, 'update_gallery_images' ]);
+		add_action( 'save_post', [ $this, 'save_hotspot_data' ]);
 		add_action( 'delete_post', [ $this, 'delete_gallery_images' ]);
 
 		$this->create_shortcodes();
@@ -271,8 +273,11 @@ class ZoomComposer {
 
 		add_meta_box( 'gallery_images', __( 'Images', 'zoomcomp' ), [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
 		$zoomcomp_upload_dir = $upload_dir['basedir'].'/zoomcomp/360/'.$post->ID;
-		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) )
+
+		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) ) {
 			add_meta_box( 'gallery_360', __( 'Gallery', 'zoomcomp' ), [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
+			add_meta_box( 'gallery_hotspot', __( 'Hotspots', 'zoomcomp' ), [ $this, 'gallery_hotspot_metabox_content' ], '360_gallery', 'normal', 'low' );
+		}
 	}
 
 	/**
@@ -348,6 +353,16 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Output the json data of hotspot related to a 360º gallery.
+	 */
+	public function output_hotspot_json() {
+		$post_id = $_REQUEST['post_id'];
+
+		echo get_post_meta( $post_id, 'hotspot_json', true );
+		exit;
+	}
+
+	/**
 	 * Update the image file names for gallery.
 	 */
 	public function update_gallery_images( $post_id ) {
@@ -393,6 +408,15 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Save hotspot configuration
+	 */
+	public function save_hotspot_data( $post_id ) {
+		if( '360_gallery' != get_post_type( $post_id ) ) return;
+		
+		update_post_meta( $post_id, 'hotspot_json', $_POST['hotspot_json'] );
+	}
+
+	/**
 	 * Delete gallery images and all the files related to it.
 	 */
 	public function delete_gallery_images( $post_id ){
@@ -412,9 +436,708 @@ class ZoomComposer {
 	 * Output content of gallery metabox.
 	 */
 	public function gallery_metabox_content() {
+		?>
+		<div id="AZplayerParentContainer"></div>
+		<br style="clear:both" />
+		<?php
+	}
 
-		echo '<div id="AZplayerParentContainer" style=""></div>';
-		echo '<br style="clear:both" />';
+	/**
+	 * Output metabox content for gallery hotspots.
+	 */
+	public function gallery_hotspot_metabox_content() {
+		?>
+		
+		
+		<div id="aZhS_tabs" style="margin-top: 20px; margin-bottom: 20px;">
+			
+			<ul>
+				<li><a href="#aZhS_tabs-1">Hotspots</a></li>
+				<li><a href="#aZhS_tabs-2">Tooltips / Text</a></li>
+				<li><a href="#aZhS_tabs-5">Edit JSON</a></li>
+			</ul>
+			
+			<div id="aZhS_tabs-1">
+				<div style="clear: both; margin: 5px 0px 10px 0px; padding: 5px;" class="ui-widget-header ui-corner-all">
+				<label>Select hotspot to edit:</label> <select id="hotspotSelector" style="font-size: 120%" onchange="jQuery('#hotspotSelector2').val(jQuery('#hotspotSelector').val()).attr('selected', true); jQuery.aZhSpotEd.colorSelectedHotspot();"></select>
+				<input type="button" value="Update List" onClick="jQuery.aZhSpotEd.updateHotspotSelector()">
+				</div>
+				
+				
+				<div id="aZhS_hotspots" style="margin-top: 5px; margin-bottom: 5px;">
+
+					<ul>
+						<li><a href="#aZhS_hotspots-1">New Hotspot</a></li>
+						<li><a href="#aZhS_hotspots-2">Actions / Delete</a></li>
+						<li><a href="#aZhS_hotspots-3">Appearance</a></li>
+					</ul>
+					
+					<div id="aZhS_hotspots-1">
+						<div class="legend">Create new hotspot</div>
+						<p>Below are only couple settings you can set right away. 
+						
+						</p>
+							
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>New hotspot name:</label>
+						<input type="text" style="width: 300px" value="" id="fieldNewHotSpotName"> 
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Hotspot type (<a href="javascript: void(0)" class="optDescr">shape</a>):</label>
+						<input name="hotspotShape" type="radio" value="point" onclick="jQuery('#rectDimFields, #rectSettings, #rectAddMessage').css('display', 'none')" checked> - point &nbsp;&nbsp;
+						<input name="hotspotShape" type="radio" value="rect" onclick="jQuery('#rectDimFields, #rectSettings, #rectAddMessage').css('display', '')"> - rectangle
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Place on all frames:</label>
+						<input type="checkbox" id="newHotspotAllFrames" value="1" checked> - makes most sense for 360 / 3D
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Auto alt title:</label>
+						<input type="checkbox" id="newHotspotAltTitle" value="1" checked> - set <a href="javascript: void(0)" class="optDescr">altTitle</a>
+						same as hotspot name
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Size:</label>
+						Left: <input type="text" style="width: 50px" value="" id="fieldRectLeft"> 
+						Top: <input type="text" style="width: 50px" value="" id="fieldRectTop">
+							<span id="rectDimFields" style="display: none;">
+								&nbsp;&nbsp;Width: <input type="text" style="width: 50px" value="" id="fieldRectWidth">
+								Height: <input type="text" style="width: 50px" value="" id="fieldRectHeight"> 
+							</span>
+						</div>
+						
+						<div class='labelOffset' style="clear: both; margin: 5px 0px 5px 0px;">
+							<div class="azMsg">The 'left', 'top', 'width' and 'height' values can be pixel values related to original size of the image 
+							(e.g. left: 1600, top: 900 or left: '1600px', top: '900px') 
+							or they can be percentage values (e.g. left: '45.75%', top: '37.3%'). 
+							<span id="rectAddMessage" style="display: none">
+							For rectangles, if you want to put a full covering overlay, set left: 0, top: 0, width: '100%' and height: '100%'
+							</span>
+							</div>
+						</div>
+						
+						<div id="rectSettings" style="display: none">
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Text width, height 100% (<a href="javascript: void(0)" class="optDescr">hotspotTextFill</a>):</label>
+									<input type="checkbox" value="1" id="fieldHotspotTextFill"> - for more settings see 
+									<a href="javascript: void(0)" class="linkShowTab" onclick="jQuery('#aZhS_tabs').tabs('select','#aZhS_tabs-2'); jQuery('#aZhS_tooltip').tabs('select','#aZhS_tooltip-2');">Tooltips / Text -> For rectangles</a>
+							</div>
+		
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>CSS Class (<a href="javascript: void(0)" class="optDescr">hotspotTextClass</a>):</label>
+								<input type="text" value="" style="width: 200px" id="fieldHotspotTextClass">
+								e.g. axZmHotspotTextCustom (try it)
+							</div>
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Inline CSS (<a href="javascript: void(0)" class="optDescr">hotspotTextCss</a>):</label>
+								e.g. {"color":"black","height":"100%","width":"100%"}
+								<input type="text" value="" style="width: 100%" id="fieldHotspotTextCss"> 
+							</div>
+						</div>
+						
+
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>&nbsp;</label>
+						<input type="button" value="CREATE" onClick="jQuery.aZhSpotEd.addNewHotspot()"> 
+						</div>
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>&nbsp;</label>
+						<!-- Todo: form for all possible options !-->
+						</div>					
+					</div>
+				
+					<div id="aZhS_hotspots-2">
+						<div class="legend">Delete / disable hotspots</div>
+						<div class="azMsg">
+							Instead of clicking on the "disable in this frame" button below you can also simply right click on any hotspot to disable it in current frame. 
+							This right click action is only activated when hotspots are draggable / editable in this editor.
+						</div>	
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Enable / disable selected hotspot for current frame:</label> 
+						<input type="button" value="Disable in this frame" onClick="jQuery.fn.axZm.showHotspotLayer(); jQuery.fn.axZm.toggleHotspotFrame(jQuery.aZhSpotEd.getHotspotSelector(), 'disable')"> 
+						<input type="button" value="Enable in this frame" onClick="jQuery.fn.axZm.showHotspotLayer(); jQuery.fn.axZm.toggleHotspotFrame(jQuery.aZhSpotEd.getHotspotSelector(), 'enable')"> 
+						(for 360 and 3D)
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Delete hotspot:</label>
+						<input type="button" value="Delete hotspot" id="hotspotDeleteButton" onClick="jQuery.aZhSpotEd.deleteHotspot()">
+						</div>
+						
+
+						
+						<div class="legend">Some API functions</div>
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Hotspots draggable:</label> 
+						<input type="button" value="Draggable" onClick="jQuery.fn.axZm.showHotspotLayer(); jQuery.fn.axZm.hotspotsDraggable()"> 
+						<input type="button" value="Not Draggable" onClick="jQuery.fn.axZm.showHotspotLayer(); jQuery.fn.axZm.hotspotsDraggable(true)"> 
+						- only for changing positions in the editor
+						
+						</div>	
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+						<label>Hide / Show all Hotspots:</label> 
+						<input type="button" value="Show" onClick="jQuery.fn.axZm.showHotspotLayer()"> 
+						<input type="button" value="Hide" onClick="jQuery.fn.axZm.hideHotspotLayer()"> 
+						</div>
+						
+					</div>
+					
+					<div id="aZhS_hotspots-3">
+			
+						<div class="legend" style="position: relative;">Hotspot appearance
+							<div id="hotspotImgPreview" style="position: absolute; right: 0px; top: 0px; background-color: #EDEDED; width: auto; height: auto; padding: 5px;"></div>
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Hotspot enabled (<a href="javascript: void(0)" class="optDescr">enabled</a>):</label>
+							<input type="checkbox" name="hotspot_enabled" id="hotspot_enabled" value="1" checked>
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Icon dimensions:</label>
+							<a href="javascript: void(0)" class="optDescr">width</a>: 
+							<input type="text" value="32" style="width: 50px;" id="hotspot_width">px  &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">height</a>: 
+							<input type="text" value="32" style="width: 50px;" id="hotspot_height">px				
+						</div>
+				
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Icon image (<a href="javascript: void(0)" class="optDescr">hotspotImage</a>):</label>
+							<input type="text" value="hotspot64_green.png" style="width: 450px;" id="hotspot_hotspotImage">
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Icon over (<a href="javascript: void(0)" class="optDescr">hotspotImageOnHover</a>):</label>
+							<input type="text" value="" style="width: 450px;" id="hotspot_hotspotImageOnHover">
+						</div>
+
+						<div class="azMsg">
+							Please note, that when a specific hotspot is selected in the editor, 
+							the default "hotspotImage" (the red round with plus sign on it) is applied to highlight the selection.  
+							This happens only in this hotspot configurator and does not affect your final code. 
+							Also the hotspots are only draggable in this configurator.
+						</div>	
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Visibility range:</label>
+							<a href="javascript: void(0)" class="optDescr">zoomRangeMin</a>: 
+							<input type="text" value="0" style="width: 50px;" id="hotspot_zoomRangeMin">% &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">zoomRangeMax</a>: 
+							<input type="text" value="100" style="width: 50px;" id="hotspot_zoomRangeMax">%
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Gravity (<a href="javascript: void(0)" class="optDescr">gravity</a>):</label> 
+							<select id="hotspot_gravity">
+								<option value="center" selected>center</option>
+								<option value="topLeft">topLeft</option>
+								<option value="top">top</option>
+								<option value="topRight">topRight</option>
+								<option value="right">right</option>
+								<option value="bottomRight">bottomRight</option>
+								<option value="bottom">bottom</option>
+								<option value="bottomLeft">bottomLeft</option>
+								<option value="left">left</option>
+							</select> 
+							&nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">offsetX</a>:
+							<input type="text" value="0" style="width: 50px;" id="hotspot_offsetX">px &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">offsetY</a>:
+							<input type="text" value="0" style="width: 50px;" id="hotspot_offsetY">px
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Padding (<a href="javascript: void(0)" class="optDescr">padding</a>):</label>
+							<input type="text" value="0" style="width: 50px;" id="hotspot_padding">px
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Opacity:</label>
+							<a href="javascript: void(0)" class="optDescr">opacity</a>: 
+							<input type="text" value="1" style="width: 50px;" id="hotspot_opacity"> &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">opacityOnHover</a>: 
+							<input type="text" value="1" style="width: 50px;" id="hotspot_opacityOnHover">
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Layer level (<a href="javascript: void(0)" class="optDescr">zIndex</a>):</label>
+							<input type="text" value="1" style="width: 50px;" id="hotspot_zIndex"> &nbsp;&nbsp;
+						</div>
+						
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Background color (<a href="javascript: void(0)" class="optDescr">backColor</a>:)</label>
+							<input type="text" value="none" style="width: 150px;" id="hotspot_backColor"> &nbsp;&nbsp;
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Border:</label>
+							<a href="javascript: void(0)" class="optDescr">borderWidth</a>: 
+							<input type="text" value="0" style="width: 30px;" id="hotspot_borderWidth">px &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">borderColor</a>: 
+							<input type="text" value="red" style="width: 100px;" id="hotspot_borderColor"> &nbsp;&nbsp;
+							<a href="javascript: void(0)" class="optDescr">borderStyle</a>: 
+							<input type="text" value="solid" style="width: 70px;" id="hotspot_borderStyle">
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Cursor (<a href="javascript: void(0)" class="optDescr">cursor</a>):</label>
+							<input type="text" value="pointer" style="width: 450px;" id="hotspot_cursor">
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()"> &nbsp;&nbsp;
+							<input type="checkbox" value="1" id="hotspotApplyAll"> - apply for all hotspots
+						</div>	
+								
+						
+					</div>
+				
+				</div>
+
+				
+			</div>
+		
+			<div id="aZhS_tabs-2">
+				<div style="clear: both; margin: 5px 0px 10px 0px; padding: 5px;" class="ui-widget-header ui-corner-all">
+					<label>Select hotspot to edit:</label> 
+					<select id="hotspotSelector2" style="font-size: 120%" onchange="jQuery('#hotspotSelector').val(jQuery('#hotspotSelector2').val()).attr('selected', true); jQuery.aZhSpotEd.colorSelectedHotspot();"></select>
+					<input type="button" value="Update List" onClick="jQuery.aZhSpotEd.updateHotspotSelector()">
+				</div>
+							
+				<div id="aZhS_tooltip" style="margin-top: 5px; margin-bottom: 5px;">
+
+					<ul>
+						<li><a href="#aZhS_tooltip-1">Tooltips</a></li>
+						<li><a href="#aZhS_tooltip-2">For rectangles</a></li>
+						<li><a href="#aZhS_tooltip-3">Link / Events</a></li>
+					</ul>
+				
+					<div id="aZhS_tooltip-1">
+
+						<div id="aZhS_tooltips" style="margin-top: 5px; margin-bottom: 5px;">
+			
+							<ul>
+								<li><a href="#aZhS_tooltips-3">Default "Popup"</a></li>
+								<li><a href="#aZhS_tooltips-2">Sticky Label</a></li>
+								<li><a href="#aZhS_tooltips-1">Alt Title</a></li>
+							</ul>
+					
+							<div id="aZhS_tooltips-1">
+							
+								<div class="legend">Alt title</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Alt title (<a href="javascript: void(0)" class="optDescr">altTitle</a>):</label> 
+									<input type="text" value="" id="hotspot_altTitle" style="width: 100%;">
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>CSS Class (<a href="javascript: void(0)" class="optDescr">altTitleClass</a>):</label> 
+									<input type="text" value="" id="hotspot_altTitleClass" style="width: 350px;">
+								</div>					
+								
+								
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Alt title hotspot offset:</label>
+									Left (<a href="javascript: void(0)" class="optDescr">altTitleAdjustX</a>): 
+									<input type="text" value="20" style="width: 50px;" id="hotspot_altTitleAdjustX">px &nbsp;&nbsp;
+									Top (<a href="javascript: void(0)" class="optDescr">altTitleAdjustY</a>): 
+									<input type="text" value="20" style="width: 50px;" id="hotspot_altTitleAdjustY">px		
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_tooltips-2">
+								<div class="legend">Sticky label</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Label title (<a href="javascript: void(0)" class="optDescr">labelTitle</a>):</label> 
+									<textarea id="hotspot_labelTitle" style="height: 100px; width: 100%;"></textarea>
+								</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Label gravity (<a href="javascript: void(0)" class="optDescr">labelGravity</a>):</label> 
+									<select id="hotspot_labelGravity" onchange="jQuery.aZhSpotEd.saveHotspotTooltip();">
+										<option value="topLeft">topLeft</option>
+										<option value="topLeftFlag1">topLeftFlag 1</option>
+										<option value="topLeftFlag2">topLeftFlag 2</option>
+										<option value="top">top</option>
+										<option value="topRight">topRight</option>
+										<option value="topRightFlag1">topRightFlag 1</option>
+										<option value="topRightFlag2">topRightFlag 2</option>
+										<option value="right">right</option>
+										<option value="rightTopFlag1">rightTopFlag 1</option>
+										<option value="rightTopFlag2">rightTopFlag 2</option>
+										<option value="rightBottomFlag1">rightBottomFlag 1</option>
+										<option value="rightBottomFlag2">rightBottomFlag 2</option>
+										<option value="bottomRight">bottomRight</option>
+										<option value="bottomRightFlag1">bottomRightFlag 1</option>
+										<option value="bottomRightFlag2">bottomRightFlag 2</option>
+										<option value="bottom">bottom</option>
+										<option value="bottomLeft">bottomLeft</option>
+										<option value="bottomLeftFlag1">bottomLeftFlag 1</option>
+										<option value="bottomLeftFlag2">bottomLeftFlag 2</option>
+										<option value="left">left</option>
+										<option value="leftTopFlag1">leftTopFlag 1</option>
+										<option value="leftTopFlag2">leftTopFlag 2</option>
+										<option value="leftBottomFlag1">leftBottomFlag 1</option>
+										<option value="leftBottomFlag2">leftBottomFlag 2</option>
+										<option value="center">center</option>
+									</select> 						 
+								</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Instant offset (<a href="javascript: void(0)" class="optDescr">labelBaseOffset</a>):</label> 
+									<input type="text" value="5" id="hotspot_labelBaseOffset" style="width: 50px;">px
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Offsets: </label> 
+									Left (<a href="javascript: void(0)" class="optDescr">labelOffsetX</a>): 
+									<input type="text" value="0" id="hotspot_labelOffsetX" style="width: 50px;">px &nbsp;&nbsp;
+									Top (<a href="javascript: void(0)" class="optDescr">labelOffsetY</a>): 
+									<input type="text" value="0" id="hotspot_labelOffsetY" style="width: 50px;">px
+								</div>
+
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>CSS class (<a href="javascript: void(0)" class="optDescr">labelClass</a>):</label> 
+									<input type="text" value="" id="hotspot_labelClass" style="width: 450px;">
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Opacity (<a href="javascript: void(0)" class="optDescr">labelOpacity</a>):</label> 
+									<input type="text" value="1.0" id="hotspot_labelOpacity" style="width: 100px;">
+								</div>		
+								
+								
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+								</div>
+								
+								
+							</div>
+							<div id="aZhS_tooltips-3">
+								<div class="legend">Default popup contents</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Title (<a href="javascript: void(0)" class="optDescr">toolTipTitle</a>):</label> 
+									<input type="text" value="" id="hotspot_toolTipTitle" style="width: 100%;">
+								</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Description (<a href="javascript: void(0)" class="optDescr">toolTipHtml</a>):</label>
+									<a href="javascript: void(0)" onclick="$.aZhSpotEd.toggleWYSIWYG()" style="float: right;">WYSIWYG</a>
+									<div id="hotspot_toolTipHtml_parent">
+										<textarea id="hotspot_toolTipHtml" style="height: 250px; width: 100%;"></textarea>
+									</div>
+								</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Dynamic content (<a href="javascript: void(0)" class="optDescr">toolTipAjaxUrl</a>):</label> 
+									<input type="text" value="" id="hotspot_toolTipAjaxUrl" style="width: 100%;">
+								</div>
+						
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+								</div>
+								
+								<div class="legend">Size and look</div>
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Dimensions:</label>
+									Width (<a href="javascript: void(0)" class="optDescr">toolTipWidth</a>): 
+									<input type="text" value="250" style="width: 50px;" id="hotspot_toolTipWidth">px &nbsp;&nbsp;
+									Height (<a href="javascript: void(0)" class="optDescr">toolTipHeight</a>): 
+									<input type="text" value="120" style="width: 50px;" id="hotspot_toolTipHeight">px
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Gravity (<a href="javascript: void(0)" class="optDescr">toolTipGravity</a>):</label> 
+									<select id="hotspot_toolTipGravity">
+										<option value="hover" selected>hover</option>
+										<option value="fullsize">fullsize</option>
+										<option value="fullscreen">fullscreen</option>
+										<option value="topLeft">topLeft</option>
+										<option value="top">top</option>
+										<option value="topRight">topRight</option>
+										<option value="right">right</option>
+										<option value="bottomRight">bottomRight</option>
+										<option value="bottom">bottom</option>
+										<option value="bottomLeft">bottomLeft</option>
+										<option value="left">left</option>
+									</select> 
+									&nbsp;<input type="checkbox" value="1" id="hotspot_toolTipGravFixed"> fixed position 
+									(<a href="javascript: void(0)" class="optDescr">toolTipGravFixed</a>)
+									&nbsp;<input type="checkbox" value="1" id="hotspot_toolTipAutoFlip"> autoflip 
+									(<a href="javascript: void(0)" class="optDescr">toolTipAutoFlip</a>)
+								</div>
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Tooltip hotspot offset:</label>
+									Left (<a href="javascript: void(0)" class="optDescr">toolTipAdjustX</a>): 
+									<input type="text" value="10" style="width: 50px;" id="hotspot_toolTipAdjustX">px &nbsp;&nbsp;
+									Top (<a href="javascript: void(0)" class="optDescr">toolTipAdjustY</a>): 
+									<input type="text" value="10" style="width: 50px;" id="hotspot_toolTipAdjustY">px		
+								</div>
+
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Tooltip edge offset (<a href="javascript: void(0)" class="optDescr">toolTipFullSizeOffset</a>):</label>
+									<input type="text" value="40" style="width: 50px;" id="hotspot_toolTipFullSizeOffset">px - from all edges
+								</div>
+			
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Event (<a href="javascript: void(0)" class="optDescr">toolTipEvent</a>):</label>
+									<input name="hotspot_toolTipEvent" id="hotspot_toolTipEvent" type="radio" value="click" checked> - click &nbsp;&nbsp;
+									<input name="hotspot_toolTipEvent" id="hotspot_toolTipEvent" type="radio" value="mouseover"> - mouseover &nbsp;&nbsp;
+									<input type="text" value="1000" style="width: 50px;" id="hotspot_toolTipHideTimout"> - hide time if mouseover 
+									(<a href="javascript: void(0)" class="optDescr">toolTipHideTimout</a>)
+								</div>
+					
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Title Class (<a href="javascript: void(0)" class="optDescr">toolTipTitleCustomClass</a>):</label>
+									<input type="text" value="" style="width: 200px" id="hotspot_toolTipTitleCustomClass"> 
+									e.g. axZmToolTipTitleCustom (try it)
+								</div>
+			
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Inner Class (<a href="javascript: void(0)" class="optDescr">toolTipCustomClass</a>):</label>
+									<input type="text" value="" style="width: 200px" id="hotspot_toolTipCustomClass"> 
+									e.g. axZmToolTipInnerCustom (try it)
+								</div>
+					
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Opacity (<a href="javascript: void(0)" class="optDescr">toolTipOpacity</a>):</label>
+									<input type="text" value="1.0" style="width:50px" id="hotspot_toolTipOpacity"> 
+									(use transparent PNG in toolTipCustomClass for only backgound opacity)
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Draggable (<a href="javascript: void(0)" class="optDescr">toolTipDraggable</a>):</label>
+									<input type="checkbox" value="1" id="hotspot_toolTipDraggable" name="hotspot_toolTipDraggable"> - title needs to be defined too (title div is handle)
+								</div>
+								
+								<div class="legend">Close icon and overlay</div>
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Close icon image (<a href="javascript: void(0)" class="optDescr">toolTipCloseIcon</a>):</label>
+									<input type="text" value="fancy_closebox.png" style="width: 450px" id="hotspot_toolTipCloseIcon" name="hotspot_toolTipCloseIcon">
+								</div>
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Close icon position (<a href="javascript: void(0)" class="optDescr">toolTipCloseIconPosition</a>):</label>  
+									<select id="hotspot_toolTipCloseIconPosition">
+										<option value="topRight" selected>topRight</option>
+										<option value="topLeft">topLeft</option>
+										<option value="bottomRight">bottomRight</option>
+										<option value="bottomLeft">bottomLeft</option>
+									</select>&nbsp;&nbsp;
+									offset (<a href="javascript: void(0)" class="optDescr">toolTipCloseIconOffset</a>): 
+									<input type="text" value="" style="width: 160px" id="hotspot_toolTipCloseIconOffset"> 
+								</div>			
+
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Overlay</label>
+									Show: (<a href="javascript: void(0)" class="optDescr">toolTipOverlayShow</a>):
+									<input type="checkbox" value="1" id="hotspot_toolTipOverlayShow" name="hotspot_toolTipOverlayShow"> &nbsp;&nbsp;
+									Close on click (<a href="javascript: void(0)" class="optDescr">toolTipOverlayClickClose</a>): 
+									<input type="checkbox" value="1" id="hotspot_toolTipOverlayClickClose" name="hotspot_toolTipOverlayClickClose">
+								</div>			
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Overlay settings:</label>
+									Opacity (<a href="javascript: void(0)" class="optDescr">toolTipOverlayOpacity</a>): 
+									<input type="text" value="" style="width: 50px" id="hotspot_toolTipOverlayOpacity"> &nbsp;&nbsp;
+									Color (<a href="javascript: void(0)" class="optDescr">toolTipOverlayColor</a>): 
+									<input type="text" value="" style="width: 80px" id="hotspot_toolTipOverlayColor">
+								</div>	
+
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+								</div>
+							
+							</div>
+							
+						</div>
+						
+					</div>
+					
+					<div id="aZhS_tooltip-2">
+						
+						<div class="legend">Mainly for rectangles</div>
+						<div style="clear: both; margin: 5px 0px 10px 0px;">
+							<label>Text inside hotspot area (<a href="javascript: void(0)" class="optDescr">hotspotText</a>):</label> 
+							Do not use " (double quotation marks) in html tags. Use ' instead! <a href="javascript: void(0)" onclick="jQuery.aZhSpotEd.setLorem('hotspot_hotspotText')">set Lorem</a>
+							<textarea id="hotspot_hotspotText" style="height: 250px; width: 100%;"></textarea>
+						</div>
+						<div style="clear: both; margin: 5px 0px 10px 0px;">
+						<label>Text width, height 100% (<a href="javascript: void(0)" class="optDescr">hotspotTextFill</a>):</label>
+							<input type="checkbox" value="1" id="hotspot_hotspotTextFill">
+						</div>
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>CSS Class (<a href="javascript: void(0)" class="optDescr">hotspotTextClass</a>):</label>
+							<input type="text" value="" style="width: 200px" id="hotspot_hotspotTextClass">
+							e.g. axZmHotspotTextCustom (try it)
+						</div>
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Inline CSS (<a href="javascript: void(0)" class="optDescr">hotspotTextCss</a>):</label>
+							e.g. {"color":"black","height":"100%","width":"100%"}
+							<input type="text" value="" style="width: 100%" id="hotspot_hotspotTextCss"> 
+						</div>
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+						</div>
+					
+					</div>
+					
+					<div id="aZhS_tooltip-3">
+						
+						<div class="legend">Link and other events (JavaScript)</div>
+
+						<div id="aZhS_events" style="margin-top: 5px; margin-bottom: 5px;">
+							
+							<ul>
+								<li><a href="#aZhS_events-1" style="font-size: 14px !important;">Link</a></li>
+								<li><a href="#aZhS_events-2" style="font-size: 14px !important;">Click</a></li>
+								<li><a href="#aZhS_events-3" style="font-size: 14px !important;">Mouseover</a></li>
+								<li><a href="#aZhS_events-4" style="font-size: 14px !important;">Mouseout</a></li>
+								<li><a href="#aZhS_events-5" style="font-size: 14px !important;">Mouseenter</a></li>
+								<li><a href="#aZhS_events-6" style="font-size: 14px !important;">Mouseleave</a></li>
+								<li><a href="#aZhS_events-7" style="font-size: 14px !important;">Mousedown</a></li>
+								<li><a href="#aZhS_events-8" style="font-size: 14px !important;">Mouseup</a></li>
+							</ul>
+							
+							<div id="aZhS_events-1" style="min-height: 200px;">
+								
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Link (<a href="javascript: void(0)" class="optDescr">href</a>):</label>
+									<input type="text" value="" style="width: 100%" id="hotspot_href">
+								</div>
+
+								<div style="clear: both; margin: 5px 0px 5px 0px;">
+									<label>Link in new window (<a href="javascript: void(0)" class="optDescr">hrefTarget</a>):</label>
+									<input type="checkbox" value="_blank" id="hotspot_hrefTarget">
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_events-2" style="min-height: 200px;">
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Click event (<a href="javascript: void(0)" class="optDescr">click</a>):</label>
+									<textarea id="hotspot_click" style="height: 300px; width: 100%;"></textarea>
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_events-3" style="min-height: 200px;">
+			
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mouseover event (<a href="javascript: void(0)" class="optDescr">mouseover</a>):</label>
+									<textarea id="hotspot_mouseover" style="height: 300px; width: 100%;"></textarea>
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_events-4" style="min-height: 200px;">
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mouseout event (<a href="javascript: void(0)" class="optDescr">mouseout</a>):</label>
+									<textarea id="hotspot_mouseout" style="height: 300px; width: 100%;"></textarea>
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_events-5" style="min-height: 200px;">
+			
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mouseenter event (<a href="javascript: void(0)" class="optDescr">mouseenter</a>):</label>
+									<textarea id="hotspot_mouseenter" style="height: 300px; width: 100%;"></textarea>
+								</div>
+
+							</div>
+							
+							<div id="aZhS_events-6" style="min-height: 200px;">
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mouseleave event (<a href="javascript: void(0)" class="optDescr">mouseleave</a>):</label>
+									<textarea id="hotspot_mouseleave" style="height: 300px; width: 100%;"></textarea>
+								</div>					
+
+							</div>
+							
+							<div id="aZhS_events-7" style="min-height: 200px;">
+			
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mousedown event (<a href="javascript: void(0)" class="optDescr">mousedown</a>):</label>
+									<textarea id="hotspot_mousedown" style="height: 300px; width: 100%;"></textarea>
+								</div>
+								
+							</div>
+							
+							<div id="aZhS_events-8" style="min-height: 200px;">
+								
+								<div style="clear: both; margin: 5px 0px 10px 0px;">
+									<label>Mouseup event (<a href="javascript: void(0)" class="optDescr">mouseup</a>):</label>
+									<textarea id="hotspot_mouseup" style="height: 300px; width: 100%;"></textarea>
+								</div>
+
+							</div>
+								
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<input type="button" value="Apply" onClick="jQuery.aZhSpotEd.saveHotspotTooltip()">
+							</div>
+						
+						</div>
+						
+					</div>
+				
+				</div>
+				
+			</div>
+
+		
+			<div id="aZhS_tabs-5">
+					
+				<div class="legend">Edit, apply entire JSON for all hotspots manually</div>
+				<div style="clear: both; margin: 5px 0px 5px 0px;">
+					<label>Import current loaded object:</label> <input type="button" value="Import" onClick="jQuery.aZhSpotEd.importJSON();"> 
+					<input type="checkbox" id="allHotspotsCodeDefaults" value="1" checked> - with defaults 
+					<input type="checkbox" id="allHotspotsCodeImgNames" value="1" checked> - positions as image names 
+					<input type="checkbox" id="allHotspotsCodeFormat" value="1"> - do not format <br /> 
+				</div>
+				
+				<div style="clear: both; margin: 5px 0px 5px 0px;">
+					<label>Search for a word:</label> 
+					<input type="text" id="jsonSearchField" value="" style="width: 300px"> &nbsp;
+					<input type="button" id="jsonSearchFieldSubmit" value="Search" onClick="jQuery.aZhSpotEd.findTextInTextArea('allHotspotsCode', jQuery('#jsonSearchField').val());"> 
+				</div>
+				
+				<div style="clear: both; margin: 5px 0px 5px 0px;">
+					<label>Scroll to hotspot JSON:</label> 
+					<div id="scrollToHotspotJSON"></div>
+				</div>	
+				
+				<div style="clear: both; margin: 5px 0px 5px 0px;">
+					<div style="height: auto;">
+						<textarea id="allHotspotsCode" name="hotspot_json" style="width: 100%; font-size:12px; line-height: 14px; height: 400px;"></textarea>
+					</div>
+					<div>
+						<label>Apply above changes:</label><br>
+						<div class="buttonWrap" id="applyJSON">
+							<input style="width: 100px;" type="button" value="Apply" onClick="jQuery.aZhSpotEd.applyJSON();"> 
+						</div>
+						<div class="buttonWrapNext">
+							<input type="checkbox" value="1" id="keepDraggable" checked> - keep draggable (will not affect final JSON)
+						</div>
+					</div>
+					<div style="height: 30px;"></div>
+				</div>
+				
+			</div>
+		
+		</div>
+		<?php
 	}
 
 	/**
@@ -462,8 +1185,21 @@ class ZoomComposer {
 				'azParam' => http_build_query([
 					'3dDir' => self::pic_dir().'/360/'.$post->ID,
 					'cache' => 0
-				])
+				]),
+				'hotspotJsonUrl' => add_query_arg( [
+					'action' => 'get_hotspot_json',
+					'post_id' => $post->ID
+				], admin_url( 'admin-ajax.php' ) )
 			]);
+
+			wp_enqueue_style( 'hotspot-editor', plugins_url( 'axZm/extensions/jquery.axZm.hotspotEditor.css', __FILE__ ) );
+			wp_enqueue_style( 'jquery-ui', plugins_url( 'axZm/plugins/jquery.ui/themes/ajax-zoom/jquery-ui.css', __FILE__ ) );
+
+			wp_enqueue_script( 'jquery-json', plugins_url( 'axZm/plugins/JSON/jquery.json-2.3.min.js', __FILE__ ) );
+			wp_enqueue_script( 'jquery-scrollTo', plugins_url( 'axZm/plugins/jquery.scrollTo.min.js', __FILE__ ) );
+			wp_enqueue_script( 'beautify-all', plugins_url( 'axZm/plugins/js-beautify/beautify-all.min.js', __FILE__ ) );
+			wp_enqueue_script( 'hotspot-editor', plugins_url( 'axZm/extensions/jquery.axZm.hotspotEditor.js', __FILE__ ) );
+			wp_enqueue_script( 'jquery-ui-tabs' );
 		}
 
 		wp_enqueue_script( 'zoomcomposer' );

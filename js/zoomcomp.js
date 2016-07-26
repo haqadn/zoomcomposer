@@ -62,19 +62,52 @@
 			}
 
 			if( $("#AZplayerParentContainer").length ){
-				
+
 				// Create empty object
 				var ajaxZoom = {}; 
 
 				// Define callbacks, for complete list check the docs
-				ajaxZoom.opt = {};
+				ajaxZoom.opt = {
+					onBeforeStart: function(){
+						// Set backgrounf color, can also be done in css file
+						jQuery('.axZm_zoomContainer').css({backgroundColor: '#FFFFFF'});		
+						
+						jQuery.axZm.displayNavi = true;
+						
+						jQuery.axZm.mapButTitle.fullScreenCornerInit = '';
+						jQuery.axZm.mapButTitle.fullScreenCornerRestore = '';
+						
+					},
+					
+					onLoad: function(){ // onSpinPreloadEnd
+						jQuery.axZm.spinReverse = true;
+						// Load hotspots over this function... or just define jQuery.axZm.hotspots here and trigger jQuery.fn.axZm.initHotspots(); after this.
+						jQuery.fn.axZm.loadHotspotsFromJsFile( zoomcomp.hotspotJsonUrl, false, function(){
+							// This is just for hotspot editor
+							if (typeof jQuery.aZhSpotEd !== 'undefined' ){
+								setTimeout(jQuery.aZhSpotEd.updateHotspotSelector, 200);
+								var HotspotJsFile = jQuery.fn.axZm.getHotspotJsFile();
+								
+								if (HotspotJsFile){
+									HotspotJsFile = jQuery.aZhSpotEd.getf('.', jQuery.aZhSpotEd.getl('/', HotspotJsFile));
+								}
+							}				
+						});
+
+						$('#post').submit(function(e){
+							jQuery.aZhSpotEd.importJSON();
+							jQuery.aZhSpotEd.removeWarningNotSaved();
+
+							return true;
+						});
+					}
+				};
 
 				// Get path to images folder
 				ajaxZoom.parameter = zoomcomp.azParam; 
 
 				// The ID of the element where ajax-zoom has to be inserted into
 				ajaxZoom.divID = "AZplayerParentContainer";
-				ajaxZoom.galleryWidth = "1000";
 
 
 				jQuery.fn.axZm.openFullScreen(ajaxZoom.path, ajaxZoom.parameter, ajaxZoom.opt, ajaxZoom.divID, false, false);
@@ -85,5 +118,5 @@
 				.children('li').click(navigate_frame)
 				.find('.remove-btn').click(toggle_remove);
 		}
-	})
+	});
 })(jQuery);
