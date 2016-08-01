@@ -1,3 +1,6 @@
+// Create empty object
+var ajaxZoom = {}; 
+
 (function($){
 	// Fire azHoverThumb on .azHoverThumb
 	$(document).ready(function(){
@@ -63,8 +66,6 @@
 
 			if( $("#AZplayerParentContainer").length ){
 
-				// Create empty object
-				var ajaxZoom = {}; 
 
 				// Define callbacks, for complete list check the docs
 				ajaxZoom.opt = {
@@ -72,10 +73,106 @@
 						// Set backgrounf color, can also be done in css file
 						jQuery('.axZm_zoomContainer').css({backgroundColor: '#FFFFFF'});		
 						
-						jQuery.axZm.displayNavi = true;
+						jQuery.axZm.displayNavi = false;
 						
 						jQuery.axZm.mapButTitle.fullScreenCornerInit = '';
 						jQuery.axZm.mapButTitle.fullScreenCornerRestore = '';
+
+						if (jQuery.axZm.spinMod){
+							jQuery.axZm.restoreSpeed = 300;
+						}else{
+							jQuery.axZm.restoreSpeed = 0;
+						}
+
+						
+
+						// Set extra space to the right at fullscreen mode for the crop gallery
+						jQuery.axZm.fullScreenSpace = {
+							top: 0,
+							right: 0,
+							bottom: $('#cropSlider').outerHeight() + 6,
+							left: 0,
+							layout: 1
+						};
+
+						//jQuery.axZm.fullScreenApi = true;
+
+						//jQuery.axZm.fullScreenCornerButton = false;
+						jQuery.axZm.fullScreenExitText = false;
+
+						// Chnage position of the map
+						//jQuery.axZm.mapPos = 'bottomLeft';
+
+						// Set mNavi buttons here if you want, can be done in the config file too
+						if (typeof jQuery.axZm.mNavi == 'object'){
+							jQuery.axZm.mNavi.enabled = true; // enable AJAX-ZOOM mNavi
+							jQuery.axZm.mNavi.alt.enabled = true; // enable button descriptions
+							jQuery.axZm.mNavi.fullScreenShow = true; // show at fullscreen too
+							jQuery.axZm.mNavi.mouseOver = true; // should be alsways visible
+							jQuery.axZm.mNavi.gravity = 'bottom'; // position of AJAX-ZOOM mNavi
+							jQuery.axZm.mNavi.offsetVert = 5; // vertical offset
+							jQuery.axZm.mNavi.offsetVertFS = 30; // vertical offset at fullscreen
+							jQuery.axZm.mNavi.parentID = 'testCustomNavi';
+
+							// Define order and space between the buttons
+							if (jQuery.axZm.spinMod){ // if it is 360 or 3D
+								jQuery.axZm.mNavi.order = {
+									mSpin: 5, mPan: 20, mZoomIn: 5, mZoomOut: 20, mReset: 5, mMap: 5, mSpinPlay: 20, 
+									mCustomBtn4: 20, mCustomBtn1: 5, mCustomBtn2: 5, mCustomBtn3: 5
+								};
+							}else{
+								jQuery.axZm.mNavi.order = {
+									mZoomIn: 5, mZoomOut: 5, mReset: 20, mGallery: 5, mMap: 20, 
+									mCustomBtn4: 20, mCustomBtn1: 5, mCustomBtn2: 5, mCustomBtn3: 5
+								};
+							}
+
+							// Define images for custom button to toggle Jcrop (see below)
+							jQuery.axZm.icons.mCustomBtn1 = {file: jQuery.axZm.buttonSet+'/button_iPad_jcrop', ext: 'png', w: 50, h: 50};
+							jQuery.axZm.mapButTitle.customBtn1 = 'Toggle jCrop';
+
+							// Define image for settings button
+							jQuery.axZm.icons.mCustomBtn2 = {file: jQuery.axZm.buttonSet+'/button_iPad_settings', ext: 'png', w: 50, h: 50};
+							jQuery.axZm.mapButTitle.customBtn2 = 'jCrop settings';
+
+							// Define image for 
+							jQuery.axZm.icons.mCustomBtn3 = {file: jQuery.axZm.buttonSet+'/button_iPad_fire', ext: 'png', w: 50, h: 50};		
+							jQuery.axZm.mapButTitle.customBtn3 = 'Fire crop!';
+
+							// Toggle jQuery.axZm.spinReverse
+							jQuery.axZm.icons.mCustomBtn4 = {file: jQuery.axZm.buttonSet+'/button_iPad_reverse', ext: 'png', w: 50, h: 50};		
+							jQuery.axZm.mapButTitle.customBtn4 = 'Toggle drag spin direction';
+
+							// function when clicked on this custom button (mCustomBtn1)
+							jQuery.axZm.mNavi.mCustomBtn1 = function(){
+								jQuery.aZcropEd.jCropMethod('toggle');
+								return false;
+							};
+
+							// Toggle Jcrop and AJAX-ZOOM thumbnail settings popup
+							jQuery.axZm.mNavi.mCustomBtn2 = function(){
+								jQuery.aZcropEd.jCropSettingsPopup();
+								return false;
+							};	
+
+							// Function when clicked on the fire crop button
+							jQuery.axZm.mNavi.mCustomBtn3 = function(){
+								jQuery.aZcropEd.jCropFire();
+								return false;
+							};
+
+							// Toggle jQuery.axZm.spinReverse
+							jQuery.axZm.mNavi.mCustomBtn4 = function(){
+								if (jQuery.axZm.spinReverse){
+									jQuery.axZm.spinReverse = false;
+								}else{
+									jQuery.axZm.spinReverse = true;
+								}
+								return false;
+							};
+						}
+
+
 						
 					},
 					
@@ -94,12 +191,66 @@
 							}				
 						});
 
+						jQuery.aZcropEd.getJSONdataFromFile(zoomcomp.cropJsonUrl);
+
 						$('#post').submit(function(e){
+							jQuery.aZcropEd.getAllThumbs();
+
 							jQuery.aZhSpotEd.importJSON();
 							jQuery.aZhSpotEd.removeWarningNotSaved();
 
 							return true;
 						});
+					},
+
+					onCropEnd: function(){
+						jQuery.aZcropEd.jCropOnChange();
+					},
+
+					onFullScreenResizeEnd: function(){
+						// Toggle Jcrop
+						if (jcrop_api){
+							jQuery.aZcropEd.jCropMethod('destroy');
+						}
+					},
+
+					onFullScreenSpaceAdded: function(){
+							jQuery('#cropSlider')
+							.css({
+								bottom: 0,
+								right: 0,
+								width: '100%',
+								zIndex: 555
+							})
+							.appendTo('#axZmFsSpaceBottom');
+					},
+
+					onFullScreenStart: function(){
+						jQuery.aZcropEd.jCropMethod('destroy');
+					},
+
+					onFullScreenClose: function(){
+						jQuery.aZcropEd.jCropMethod('destroy');
+						jQuery.fn.axZm.tapShow();
+
+						jQuery('#cropSlider')
+						.css({
+							bottom: '',
+							right: '',
+							zIndex: ''
+						})
+						.appendTo('#cropSliderWrap');
+					},
+					onFullScreenCloseEndFromRel: function(){
+
+						// Restore position of the slider
+						jQuery('#cropSlider')
+						.css({
+							bottom: '',
+							right: '',
+							zIndex: ''
+						})
+						.appendTo('#cropSliderWrap');
 					}
 				};
 

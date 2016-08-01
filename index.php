@@ -35,8 +35,10 @@ class ZoomComposer {
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'wp_ajax_upload_gallery_image', [ $this, 'process_upload_gallery_image' ]);
 		add_action( 'wp_ajax_get_hotspot_json', [ $this, 'output_hotspot_json' ]);
+		add_action( 'wp_ajax_get_crop_json', [ $this, 'output_crop_json' ]);
 		add_action( 'save_post', [ $this, 'update_gallery_images' ]);
 		add_action( 'save_post', [ $this, 'save_hotspot_data' ]);
+		add_action( 'save_post', [ $this, 'save_crop_data' ]);
 		add_action( 'delete_post', [ $this, 'delete_gallery_images' ]);
 
 		$this->create_shortcodes();
@@ -277,6 +279,7 @@ class ZoomComposer {
 		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) ) {
 			add_meta_box( 'gallery_360', __( 'Gallery', 'zoomcomp' ), [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
 			add_meta_box( 'gallery_hotspot', __( 'Hotspots', 'zoomcomp' ), [ $this, 'gallery_hotspot_metabox_content' ], '360_gallery', 'normal', 'low' );
+			add_meta_box( 'gallery_thumb_crop', __( 'Crop Thumbnails', 'zoomcomp' ), [ $this, 'gallery_thumb_crop_metabox_content' ], '360_gallery', 'normal', 'low' );
 		}
 	}
 
@@ -363,6 +366,16 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Output the json data of crop thumbnails related to a 360º gallery.
+	 */
+	public function output_crop_json() {
+		$post_id = $_REQUEST['post_id'];
+
+		echo get_post_meta( $post_id, 'crop_json', true );
+		exit;
+	}
+
+	/**
 	 * Update the image file names for gallery.
 	 */
 	public function update_gallery_images( $post_id ) {
@@ -417,6 +430,15 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Save crop thumbnail configuration
+	 */
+	public function save_crop_data( $post_id ) {
+		if( '360_gallery' != get_post_type( $post_id ) ) return;
+		
+		update_post_meta( $post_id, 'crop_json', $_POST['crop_json'] );
+	}
+
+	/**
 	 * Delete gallery images and all the files related to it.
 	 */
 	public function delete_gallery_images( $post_id ){
@@ -437,8 +459,19 @@ class ZoomComposer {
 	 */
 	public function gallery_metabox_content() {
 		?>
-		<div id="AZplayerParentContainer"></div>
-		<br style="clear:both" />
+		<div>
+			<div id="AZplayerParentContainer"></div>
+			<br style="clear:both" />
+
+			<div id='testCustomNavi' class="ui-widget-header" style="width: 720px;"></div>
+		</div>
+
+		<!-- Thumb slider with croped images -->
+		<div id="cropSliderWrap">
+			<div id="cropSlider">
+				<ul></ul>
+			</div>
+		</div>	
 		<?php
 	}
 
@@ -1141,6 +1174,269 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Output metabox content for crop gallery.
+	 */
+	public function gallery_thumb_crop_metabox_content() {
+
+		$axzm_cms_mode = true;
+
+		/* Default size of the thumbnails */
+		$default_thumb_size = $axzm_cms_mode ? 140 : 180;
+
+		/* In CMS mode the player should be best started responsive */
+		$player_responsive = $axzm_cms_mode ? true : false;
+
+		$langugaes_array = json_encode(array('en', 'de', 'fr', 'es', 'it'));
+		?>
+			
+			<script type="text/javascript">
+			<?php
+			echo 'jQuery.aZcropEd.langugaesArray = '.$langugaes_array.'; ';
+			echo 'jQuery.aZcropEd.playerResponsive = '.($player_responsive ? 'true' : 'false').'; ';
+
+			if ($axzm_cms_mode)
+				echo 'jQuery.aZcropEd.errors = false;';
+			?>
+			</script>
+
+			<div id="aZcR_tabs">
+				<!-- Tab titles -->
+				<ul>
+					<li><a href="#aZcR_tabs-sel">Crop settings</a></li>
+					<li><a href="#aZcR_tabs-crops">Cropped images</a></li>
+					<li><a href="#aZcR_tabs-descr">Description / Settings</a></li>
+					<li><a href="#aZcR_tabs-import">JSON Data</a></li>
+				</ul>
+
+				<!-- Crop settings -->
+				<div id="aZcR_tabs-sel">
+					<!-- Crop options for Jcrop selector and AJAX-ZOOM thumbnail generator-->
+					<div id="cropOptionsParent">
+						<div id="cropOptions">
+							<div class="legend">Jcrop (selector) settings</div>
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Selection:</label>
+								<select id="cropOpt_selection" onchange="jQuery.aZcropEd.jCropHandleSelection()">
+									<option value="">normal</option>
+									<option value="aspectRatio" selected="selected">Aspect ratio</option>
+									<option value="fixedSize">Fixed size</option>
+								</select>
+							</div>
+							<div id="cropOpt_ratioBox" style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Aspect ratio:</label>
+								W: <input id="cropOpt_ratio1" type="text" value="1" style="width: 50px" onchange="jQuery.aZcropEd.jCropAspectRatio()"> 
+								<input type="button" style="width: 30px;" value="&#8660;" onclick="jQuery.aZcropEd.jCropAspectFlipValues()">
+								H: <input id="cropOpt_ratio2" type="text" value="1" style="width: 50px" onchange="jQuery.aZcropEd.jCropAspectRatio()"> 
+								<div>
+									<label></label>
+									<input type="button" value="as thumb" style="margin-top: 3px; width: 80px;" onclick="jQuery.aZcropEd.jCropAspectAsThumb()">
+									<input type="button" value="as image" style="margin-top: 3px; width: 80px;" onclick="jQuery.aZcropEd.jCropAspectAsImage()">
+								</div>
+							</div>
+							<div id="cropOpt_sizeBox" style="clear: both; margin: 5px 0px 5px 0px; display: none;">
+								<label>Fixed size:</label>
+								W: <input id="cropOpt_sizeW" type="text" value="" style="width: 50px" onchange="jQuery.aZcropEd.jCropFixedSize()"> 
+								H: <input id="cropOpt_sizeH" type="text" value="" style="width: 50px" onchange="jQuery.aZcropEd.jCropFixedSize()"> px
+							</div>
+
+							<div class="legend">Thumbnail settings</div>
+
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Thumbnail size:</label>
+								W: <input id="cropOpt_thumbSizeW" type="text" value="<?php echo $default_thumb_size; ?>" 
+									style="width: 50px" onchange="jQuery.aZcropEd.jCropInitSettings()">  
+								H: <input id="cropOpt_thumbSizeH" type="text" value="<?php echo $default_thumb_size; ?>" 
+									style="width: 50px" onchange="jQuery.aZcropEd.jCropInitSettings()"> px
+							</div>
+
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Thumbnail mode:</label>
+								<select id="cropOpt_thumbMode" onchange="jQuery.aZcropEd.jCropInitSettings()">
+									<option value="">-</option>
+									<option value="contain">contain</option>
+									<option value="cover">cover</option>
+								</select>
+							</div>
+
+							<div id="cropOpt_colorBox" style="clear: both; margin: 5px 0px 5px 0px; display: none;">
+								<label>Background color (hex):</label>
+								#<input id="cropOpt_backColor" type="text" value="FFFFFF" style="width: 100px" onchange="jQuery.aZcropEd.jCropInitSettings()">
+							</div>
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Jpeg quality:</label>
+								<input id="cropOpt_jpgQual" type="text" value="90" style="width: 40px" onchange="jQuery.aZcropEd.jCropInitSettings()"> 
+								(10 - 100)
+							</div>	
+							<div style="clear: both; margin: 5px 0px 5px 0px;">
+								<label>Cache (can be set later):</label>
+								<input id="cropOpt_cache" type="checkbox" value="1" onchange="jQuery.aZcropEd.jCropInitSettings()">
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+				<!-- Cropped images -->
+				<div id="aZcR_tabs-crops">
+					<?php
+					if ($axzm_cms_mode)
+					{
+					?>
+						<div class="legend">Crops, Drag & drop to reorder</div>
+					<?php 
+					}
+					else
+					{
+					?>
+						<div class="legend">Crop results (real size)</div>
+					<?php
+					}
+					?>
+
+					<?php 
+					if (!$axzm_cms_mode)
+					{
+					?>
+						<div class="azMsg">Drag & drop to reorder the thumbs, click to get the paths and other information (see below), 
+						double click to zoom.
+						</div>
+					<?php
+					}
+					?>
+
+					<!-- Crop results real size -->
+					<div id="aZcR_cropResults"></div>
+					<input type="button" value="Reamove all crops" style="margin-top: 5px" onclick="jQuery.aZcropEd.clearAll()" /> 
+					<?php 
+					if (!$axzm_cms_mode)
+					{
+					?>
+						- crops will be not deleted physically here!
+
+						<div class="legend">Paths</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Query string:</label>
+							<input id="aZcR_qString" type="text" onClick="this.select();" style="margin-bottom: 5px; width: 100%" value="">
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Url:</label>
+							(please note that full Url might differ if this editor is implemented in a backend of some CMS)
+							<input id="aZcR_url" type="text" onClick="this.select();" style="margin-bottom: 5px; width: 100%" value="">
+						</div>
+
+						<div style="clear: both; margin: 5px 0px 5px 0px;">
+							<label>Cached image url:</label>
+							(only available if "cache" option is chacked under "crop settings" tab)
+							<input id="aZcR_contentLocation" type="text" onClick="this.select();" style="margin-bottom: 5px; width: 100%" value="">
+						</div>
+					<?php
+					}
+					?>
+				</div>
+
+				<!-- Description -->
+				<div id="aZcR_tabs-descr">
+					<div class="legend">Crop description</div>
+
+					<div class="azMsg">
+						<img border="0" style="position: relative; cursor: pointer; float: right; margin-right: -5px; margin-top: -5px;" 
+							alt="close this box" title="close this message" onclick="jQuery(this).parent().remove()" src="<?php echo plugins_url( 'axZm/icons/default/zoombutton_close.png', __FILE__ );?>">
+
+						<?php 
+						if (!$axzm_cms_mode)
+						{
+						?>
+							Optionally add a title || description to use them later in various ways.
+							In this editor and also in the derived "clean" examples like 
+							<a href="example35_clean.php">example35_clean.php</a> 
+							we use "axZmEb" - expandable button (AJAX-ZOOM additional plugin) to display these titles || descriptions 
+							over the image respectively inside the player. You could however easily change the usage of title || description in your implementation, 
+							e.g. display them under the player or whatever. Just change the "handleTexts" property of the options object 
+							when passing it to jQuery.axZmImageCropLoad - see source code of e.g. <a href="example35_clean.php">example35_clean.php</a>;<br><hr />
+							
+							Besides HTML or your text you could also load external content in iframe! The prefix for the source is "iframe:"<br><br>
+							e.g. to load an extennal page simply put something like this in the descripion:<br> 
+							iframe://www.canon.co.uk/For_Home/Product_Finder/Cameras/Digital_SLR/EOS_1100D
+							<br><br>
+							To load a YouTube video you could put this (replace eLvvPr6WPdg with your video code): <br>
+							iframe://www.youtube.com/embed/eLvvPr6WPdg?feature=player_detailpage
+							<br><br>
+							To load some dynamic content over AJAX use "ajax:" as prefix, e.g.<br>
+							ajax:/test/some_content_data.php?req=123
+							<br><br>
+							If you do not define the title, then the content will be loaded instantly as soon as the spin animation finishes.
+							
+						<?php
+						}
+						else
+						{
+						?>
+							Optionally add a title and/or description. 
+							Besides HTML or your text you could also load external content in iframe! 
+							The prefix for the source is "iframe:"<br><br>
+							e.g. to load an extennal page simply put something like this in the descripion:<br> 
+							iframe://www.canon.co.uk/For_Home/Product_Finder/Cameras/Digital_SLR/EOS_1100D
+							<br><br>
+							To load a YouTube video you could put this (replace eLvvPr6WPdg with your video code): <br>
+							iframe://www.youtube.com/embed/eLvvPr6WPdg?feature=player_detailpage
+							<br><br>
+							To load some dynamic content over AJAX use "ajax:" as prefix, e.g.<br>
+							ajax:/test/some_content_data.php?req=123
+							<br><br>
+							If you do not define the title, then the content will be loaded instantly as soon as the spin animation finishes.
+						<?php
+						}
+						?>
+					</div>
+
+					<div id="aZcR_descrWrap">
+						<!-- Tables with title and description field will be added here -->
+					</div>
+				</div>
+
+				<!-- Import / Save -->
+				<div id="aZcR_tabs-import">
+					<div class="legend">JSON Data</div>
+
+					<!-- Import form, do not change order of the fields-->
+					<div id="aZcR_getAllThumbsForm">
+						<input type="button" value="Refresh" onclick="jQuery.aZcropEd.getAllThumbs()">
+
+						<select style="display: none;" onchange="jQuery.aZcropEd.getAllThumbs()" autocomplete=off>
+							<option value="qString">Query string</option>
+							<option value="url">Url</option>
+							<option value="contentLocation">Cached image url</option>
+						</select> 
+
+						<select style="display: none;" onchange="handleDisplayLongLine(this)" autocomplete=off>
+							<option value="JSON_data">JSON with data</option>
+							<option value="JSON">JSON</option>
+							<option value="CSV">CSV</option>
+						</select>
+
+						<span style="display: none;"> <input type="text" value="|" style="width: 20px; display: none;" 
+							onchange="jQuery.aZcropEd.getAllThumbs()" autocomplete=off></span> 
+						<input style="display: none;" type="checkbox" value="1" onclick="jQuery.aZcropEd.getAllThumbs()" checked="true" autocomplete=off>
+						and replace thumb size 
+						<input type="checkbox" value="1" onclick="jQuery(this).next().toggle(); jQuery.aZcropEd.getAllThumbs();" autocomplete=off>
+						<span style="display: none">
+							W: <input type="text" style="width: 50px" onchange="jQuery.aZcropEd.getAllThumbs();" autocomplete=off>
+							H: <input type="text" style="width: 50px" onchange="jQuery.aZcropEd.getAllThumbs();" autocomplete=off> px
+						</span>
+						<input style="display: none;" type="checkbox" value="1" onclick="jQuery.aZcropEd.getAllThumbs();" autocomplete=off>
+					</div>
+
+					<textarea id="aZcR_getAllThumbs" name="crop_json" style="width: 100%; height: 350px; font-size: 10px; margin-top: 5px;" spellcheck="false"></textarea>
+				</div>
+			<!-- end Tabs wrapper -->
+			</div>
+		
+		<?php
+	}
+
+	/**
 	 * Generate a link to thumbnail that is provided with axZm.
 	 */
 	public function make_thumb_link( $image_url, $atts = array() ){
@@ -1178,7 +1474,6 @@ class ZoomComposer {
 		wp_enqueue_style( 'dropzone', plugins_url( 'css/dropzone.min.css', __FILE__ ) );
 
 		wp_register_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ), [ 'jquery', 'jquery-ui-sortable' ] );
-		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
 
 		if( in_array( $pagenow, array( 'post.php', 'post-new.php' ) ) && $post->post_type == '360_gallery' ){
 			wp_localize_script( 'zoomcomposer', 'zoomcomp', [
@@ -1189,20 +1484,42 @@ class ZoomComposer {
 				'hotspotJsonUrl' => add_query_arg( [
 					'action' => 'get_hotspot_json',
 					'post_id' => $post->ID
+				], admin_url( 'admin-ajax.php' ) ),
+				'cropJsonUrl' => add_query_arg( [
+					'action' => 'get_crop_json',
+					'post_id' => $post->ID
 				], admin_url( 'admin-ajax.php' ) )
 			]);
 
+			wp_enqueue_script( 'hotspot-editor', plugins_url( 'axZm/extensions/jquery.axZm.hotspotEditor.js', __FILE__ ) );
 			wp_enqueue_style( 'hotspot-editor', plugins_url( 'axZm/extensions/jquery.axZm.hotspotEditor.css', __FILE__ ) );
 			wp_enqueue_style( 'jquery-ui', plugins_url( 'axZm/plugins/jquery.ui/themes/ajax-zoom/jquery-ui.css', __FILE__ ) );
 
 			wp_enqueue_script( 'jquery-json', plugins_url( 'axZm/plugins/JSON/jquery.json-2.3.min.js', __FILE__ ) );
 			wp_enqueue_script( 'jquery-scrollTo', plugins_url( 'axZm/plugins/jquery.scrollTo.min.js', __FILE__ ) );
 			wp_enqueue_script( 'beautify-all', plugins_url( 'axZm/plugins/js-beautify/beautify-all.min.js', __FILE__ ) );
-			wp_enqueue_script( 'hotspot-editor', plugins_url( 'axZm/extensions/jquery.axZm.hotspotEditor.js', __FILE__ ) );
 			wp_enqueue_script( 'jquery-ui-tabs' );
+
+
+			wp_enqueue_style( 'jcrop', plugins_url( 'axZm/plugins/jCrop/css/jquery.Jcrop.css', __FILE__ ) );
+			wp_enqueue_script( 'jcrop', plugins_url( 'axZm/plugins/jCrop/js/jquery.Jcrop.js', __FILE__ ), ['jquery'] );
+			wp_enqueue_script( 'mousewheel', plugins_url( 'axZm/extensions/axZmThumbSlider/lib/jquery.mousewheel.min.js', __FILE__ ) );
+
+			wp_enqueue_script( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/lib/jquery.axZm.thumbSlider.js', __FILE__ ) );
+			wp_enqueue_style( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/skins/default/jquery.axZm.thumbSlider.css', __FILE__ ) );
+
+			wp_enqueue_script( 'image-crop-editor', plugins_url( 'js/jquery.axZm.imageCropEditor.js', __FILE__ ), ['zoomcomposer'] );
+			wp_enqueue_style( 'image-crop-editor', plugins_url( 'axZm/extensions/jquery.axZm.imageCropEditor.css', __FILE__ ) );
+
+
+			wp_enqueue_style( 'cleditor', plugins_url( 'axZm/plugins/CLEditor/jquery.cleditor.css', __FILE__ ) );
+			wp_enqueue_script( 'cleditor', plugins_url( 'axZm/plugins/CLEditor/jquery.cleditor.min.js', __FILE__ ), ['zoomcomposer'] );
+			wp_enqueue_script( 'cleditor-table', plugins_url( 'axZm/plugins/CLEditor/jquery.cleditor.table.min.js', __FILE__ ), ['zoomcomposer'] );
+
 		}
 
 		wp_enqueue_script( 'zoomcomposer' );
+		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
 
 	}
 

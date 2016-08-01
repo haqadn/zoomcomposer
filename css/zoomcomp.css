@@ -9,6 +9,44 @@
 
 }
 
+#cropSliderWrap {
+    position: static; 
+    width: 100%;
+    height: 100px;
+}
+
+#cropSlider {
+    position: static; 
+    height: 100px;
+    width: 100%;
+}
+
+.axZmThumbSlider_button {
+  height: 100% !important;
+}
+
+#testCustomNavi {
+  width: 100% !important;
+  overflow-x: scroll;
+}
+
+#axZmFsSpaceBottom div{
+  box-sizing: border-box;
+}
+
+#axZmFsSpaceBottom{
+  background-color: #3E3E3E;
+}
+
+#axZmFsSpaceBottom .axZmThumbSlider li.horizontal.last {
+  margin-right: 6px !important;
+}
+
+#axZmFsSpaceBottom .axZmThumbSlider li.horizontal.first {
+  margin-left: 6px !important;
+}
+
+
 #gallery_images .existing-images {
   clear: both;
   margin-left: -10px;
