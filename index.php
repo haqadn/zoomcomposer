@@ -50,6 +50,7 @@ class ZoomComposer {
 	public function create_shortcodes() {
 		add_shortcode( 'zoomcomp_thumb_hover_zoom_gallery', [ $this, 'shortcode_thumb_hover_zoom_gallery' ] );
 		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_thumb_hover_zoom_item' ] );
+		add_shortcode( 'zoomcomp_gallery_button', [ $this, 'shortcode_gallery_button' ] );
 	}
 
 	/**
@@ -126,6 +127,52 @@ class ZoomComposer {
 			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo wp_make_link_relative( $image[0] ); ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
 		</div>
 		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Shortcode processor for gallery button
+	 */
+	public function shortcode_gallery_button( $atts, $content ) {
+		extract( shortcode_atts( [
+			'images'     => '',
+			'class'      => '',
+			'type'       => 'regular',
+			'element'    => 'link',
+			'target'     => 'window',
+			'fullscreen' => false
+		], $atts ) );
+
+		if( 'regular' == $type ) {
+			$images = explode( ',', $images );
+			$images = array_map( function($img){
+				$img_id = (int) $img;
+
+				$image = wp_get_attachment_image_src( $img, 'full' );
+				return wp_make_link_relative( $image[0] );
+			}, $images );
+
+			$images = implode( '|', $images );
+			$qstring = http_build_query([ 'zoomData' => $images ]);
+		}
+		elseif( '3d' == $type ) {
+			$qstring = http_build_query([ '3dDir' => self::pic_dir().'/360/'.trim($images) ]);
+		}
+
+		$axzm_dir = plugins_url( 'axZm/', __FILE__ );
+		$axzm_dir = wp_make_link_relative( $axzm_dir );
+
+		$function_call_string = "jQuery.fn.axZm.openFullScreen('$axzm_dir', '$qstring', {}, '$target', ".($fullscreen?'true':'false')." )";
+
+		ob_start();
+
+		if( 'button' == $element ){
+			echo '<button class="'.$class.'" onclick="'.$function_call_string.'">'.$content.'</button>';
+		}
+		else {
+			echo '<a class="'.$class.'" href="javascript:void(0)" onclick="'.$function_call_string.'">'.$content.'</a>';
+		}
+
 		return ob_get_clean();
 	}
 
