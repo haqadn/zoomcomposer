@@ -277,11 +277,11 @@ class ZoomComposer {
 							</div>
 						</div>
 
-						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header" style="width: 100%;"></div>
+						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header mnavi" style="width: 100%;"></div>
 					</div>
 					<?php else : ?>
 						<div id="<?php echo $player_id; ?>" class="axZmBorderBox" style="width: 100%; min-height: <?php echo $height; ?>;"><?php _e( "Loading...", "zoomcomp" ); ?></div>
-						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header" style="width: 100%;"></div>
+						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header mnavi" style="width: 100%;"></div>
 					<?php endif; ?>
 
 					<script type="text/javascript">

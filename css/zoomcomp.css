@@ -37,6 +37,10 @@ a:active, a:hover {
 	float: left;
 }
 
+.mnavi {
+	overflow: auto;
+}
+
 .upload-dropzone {
 	position: absolute;
 	bottom: 50px;
