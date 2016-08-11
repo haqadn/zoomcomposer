@@ -222,7 +222,7 @@ class ZoomComposer {
 
 
 		$hotspot = 'no' == $hotspot ? false : true;
- 		$crop = 'no' == $crop ? false : true;
+		$crop = 'no' == $crop ? false : true;
 
 		if( !$slider_id ) return;
 
