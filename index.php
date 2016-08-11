@@ -404,10 +404,6 @@ class ZoomComposer {
 						window.fullScreenStartSplash = {enable: false, className: false, opacity: 0.75};
 						jQuery.fn.axZm.openFullScreen(ajaxZoom.path, ajaxZoom.parameter, ajaxZoom.opt, ajaxZoom.divID, true, false);
 					});
-
-					jQuery(window).load(function(){
-						jQuery('#<?php echo $container_id; ?>', window.parent.document).height(jQuery(document).height());
-					});
 					</script>
 
 				</body>
