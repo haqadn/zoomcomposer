@@ -263,7 +263,7 @@ class ZoomComposer {
 				</head>
 				<body>
 					<?php if ($crop): ?>
-					<div id="<?php echo $wrapper_id; ?>" style="padding-right: 100px; position: relative; min-height: <?php echo $height; ?>;">
+					<div id="<?php echo $wrapper_id; ?>" style="<?php if( 'vertical' == $thumbslider_orientation ) echo 'padding-right: 100px;'; ?> position: relative; min-height: <?php echo $height; ?>;">
 						<div id="<?php echo $player_id; ?>" style="height: 100%; position: relative;">
 							<!-- Content inside target will be removed -->
 							<div style="padding: 20px">Loading, please wait...</div>
@@ -372,14 +372,24 @@ class ZoomComposer {
 
 								// Set extra space to the right at fullscreen mode for the crop gallery
 								jQuery.axZm.fullScreenSpace = {
-									right: jQuery("#<?php echo $cropslider_id; ?>").outerWidth(),
-									top: 0, bottom: 0, left: 0, layout: 1
+									right: <?php echo 'vertical' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerWidth()' : 0 ?>,
+									top: 0,
+									bottom: <?php echo 'horizontal' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerHeight()' : 0 ?>,
+									left: 0,
+									layout: 1
 								};
 							},
 							onFullScreenSpaceAdded: function(){
-								jQuery("#<?php echo $cropslider_id; ?>")
-								.css({bottom: 0,right: 0, height: "100%", zIndex: 555})
-								.appendTo("#axZmFsSpaceRight");
+								<?php if( 'vertical' == $thumbslider_orientation ): ?>
+									jQuery("#<?php echo $cropslider_id; ?>")
+										.css({bottom: 0,right: 0, height: "100%", zIndex: 555})
+										.appendTo("#axZmFsSpaceRight");
+								<?php elseif( 'horizontal' == $thumbslider_orientation ) : ?>
+									jQuery("#<?php echo $cropslider_id; ?>")
+										.css({top: 4, left: 0, zIndex: 555})
+										.appendTo("#axZmFsSpaceBottom");
+								<?php endif; ?>
+
 
 							},
 							onFullScreenClose: function(){

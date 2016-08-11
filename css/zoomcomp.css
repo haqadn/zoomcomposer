@@ -12,10 +12,25 @@ a:active, a:hover {
 
 .cropslider_wrap_vertical {
   width: 100px;
+	height: 100%;
   position: absolute;
   right: 0;
   top: 0;
-  height: 100%;
+}
+
+.cropslider_wrap_vertical .axZmThumbSlider_button,
+.axZmFsSpaceRight .axZmThumbSlider_button {
+	height: 20px !important;
+}
+
+.cropslider_wrap_horizontal {
+	width: 100%;
+	height: 100px;
+}
+
+.cropslider_wrap_horizontal > div {
+	height: 100%;
+	position: static;
 }
 
 .thumbHoverZoomGallery .thumbContainer {
@@ -29,7 +44,7 @@ a:active, a:hover {
 
 }
 
-#cropSliderWrap {
+#cropSliderWrap:not(.cropslider_wrap_vertical) {
     position: static;
     width: 100%;
     height: 100px;
@@ -56,6 +71,10 @@ a:active, a:hover {
 
 #axZmFsSpaceBottom{
   background-color: #3E3E3E;
+}
+
+#axZmFsSpaceBottom > div {
+	height: 100%;
 }
 
 #axZmFsSpaceBottom .axZmThumbSlider li.horizontal.last {
