@@ -353,8 +353,6 @@ class ZoomComposer {
 		<?php
 	}
 
-
-
 	/**
 	 * Generate shortcode content for 360º slider
 	 */
@@ -364,6 +362,9 @@ class ZoomComposer {
 		return '<iframe src="'.$url.'" id="'.$id.'" frameborder="none" width="100%" allowFullScreen></iframe>';
 	}
 
+	/**
+	 * Generate shorcode content in gallery for 360º slider
+	 */
 	public function shortcode_gallery_360( $atts ) {
 		global $galleryData, $galleryHotspots, $galleryDescriptions;
 
