@@ -104,6 +104,24 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Generate shortcode content in gallery for single image.
+	 */
+	public function shortcode_gallery_thumb_hover_zoom_item( $atts ) {
+		global $galleryData, $galleryHotspots, $galleryDescriptions;
+
+		extract( shortcode_atts( [
+			'attachment_id' => 0,
+			'description'   => ''
+		], $atts ));
+
+		$image = wp_get_attachment_image_src( $attachment_id, 'full' );
+		$url   = wp_make_link_relative( $image[0] );
+
+		$galleryData[] = ['imageZoom', $url];
+		if('' != $description) $galleryDescriptions[basename($url)] = $description;
+	}
+
+	/**
 	 * Shortcode processor thumb hover zoom item.
 	 */
 	public function shortcode_thumb_hover_zoom_item( $atts ) {
@@ -204,12 +222,16 @@ class ZoomComposer {
 		$thumbs_at_fullscreen = 'vertical' == $thumbslider_orientation ? 'right' : 'bottom';
 
 		// Redefine shortcodes for this gallery.
+		remove_shortcode('zoomcomp_thumb_hover_zoom_item');
+		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_gallery_thumb_hover_zoom_item' ] );
 		remove_shortcode( 'zoomcomp_360' );
 		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_gallery_360' ] );
 
 		global $galleryData, $galleryHotspots, $galleryDescriptions;
 		do_shortcode($content);
 
+		remove_shortcode('zoomcomp_thumb_hover_zoom_item');
+		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_thumb_hover_zoom_item' ] );
 		remove_shortcode( 'zoomcomp_360' );
 		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_zoomcomp_360' ] );
 
