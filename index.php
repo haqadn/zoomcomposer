@@ -226,6 +226,7 @@ class ZoomComposer {
 		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_gallery_thumb_hover_zoom_item' ] );
 		remove_shortcode( 'zoomcomp_360' );
 		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_gallery_360' ] );
+		add_shortcode( 'zoomcomp_video', [ $this, 'shorcode_gallery_video' ] );
 
 		global $galleryData, $galleryHotspots, $galleryDescriptions;
 		do_shortcode($content);
@@ -234,6 +235,7 @@ class ZoomComposer {
 		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_thumb_hover_zoom_item' ] );
 		remove_shortcode( 'zoomcomp_360' );
 		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_zoomcomp_360' ] );
+		remove_shortcode( 'zoomcomp_video' );
 
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'gallery_360', plugins_url( 'axZm/extensions/jquery.axZm.360Gallery.js', __FILE__ ) );
@@ -379,6 +381,32 @@ class ZoomComposer {
 		$galleryHotspots[$slider_id] = add_query_arg(['action' => 'get_hotspot_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) );
 		if('' != $description) $galleryDescriptions[$slider_id] = $description;
 
+	}
+
+	/**
+	 * Generate shortcode content for video in gallery.
+	 */
+	public function shorcode_gallery_video( $atts ){
+
+		global $galleryData, $galleryDescriptions;
+
+		extract( shortcode_atts([
+			'url' => '',
+			'description' => ''
+		], $atts));
+
+		if( preg_match("/https?:\/\/(www\.)?youtube.com\/watch\?v=([a-zA-Z0-9_]*)/", $url, $output_array) ){
+			$galleryData[] = ['youtube', $output_array[2]];
+			if('' != $description) $galleryDescriptions[$output_array[2]] = $description;
+		}
+		elseif( preg_match("/https?:\/\/(www\.)?vimeo.com\/([0-9_]*)/", $url, $output_array) ){
+			$galleryData[] = ['vimeo', $output_array[2]];
+			if('' != $description) $galleryDescriptions[$output_array[2]] = $description;
+		}
+		elseif( preg_match("/https?:\/\/(www\.)?dailymotion.com\/video\/([a-z0-9]*)_?.*/", $url, $output_array) ){
+			$galleryData[] = ['dailymotion', $output_array[2]];
+			if('' != $description) $galleryDescriptions[$output_array[2]] = $description;
+		}
 	}
 
 	/**
