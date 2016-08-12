@@ -746,6 +746,7 @@ class ZoomComposer {
 	 */
 	public function save_hotspot_data( $post_id ) {
 		if( '360_gallery' != get_post_type( $post_id ) ) return;
+		if( !isset( $_POST['hotspot_json'] ) ) return;
 
 		update_post_meta( $post_id, 'hotspot_json', $_POST['hotspot_json'] );
 	}
@@ -755,6 +756,7 @@ class ZoomComposer {
 	 */
 	public function save_crop_data( $post_id ) {
 		if( '360_gallery' != get_post_type( $post_id ) ) return;
+		if( !isset( $_POST['crop_json'] ) ) return;
 
 		update_post_meta( $post_id, 'crop_json', $_POST['crop_json'] );
 	}
