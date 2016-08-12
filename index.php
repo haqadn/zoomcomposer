@@ -66,6 +66,7 @@ class ZoomComposer {
 		add_shortcode( 'zoomcomp_thumb_hover_zoom_item', [ $this, 'shortcode_thumb_hover_zoom_item' ] );
 		add_shortcode( 'zoomcomp_gallery_button', [ $this, 'shortcode_gallery_button' ] );
 		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_zoomcomp_360' ] );
+		add_shortcode( 'zoomcomp_gallery', [ $this, 'shortcode_zoomcomp_gallery' ] );
 	}
 
 	/**
@@ -192,12 +193,169 @@ class ZoomComposer {
 	}
 
 	/**
+	 * Generate shortcode content for gallery
+	 */
+	public function shortcode_zoomcomp_gallery( $atts, $content ){
+		extract( shortcode_atts([
+			'thumbslider_orientation' => 'vertical',
+			'height'                  => '400px'
+		], $atts ) );
+
+		$thumbs_at_fullscreen = 'vertical' == $thumbslider_orientation ? 'right' : 'bottom';
+
+		// Redefine shortcodes for this gallery.
+		remove_shortcode( 'zoomcomp_360' );
+		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_gallery_360' ] );
+
+		global $galleryData, $galleryHotspots, $galleryDescriptions;
+		do_shortcode($content);
+
+		remove_shortcode( 'zoomcomp_360' );
+		add_shortcode( 'zoomcomp_360', [ $this, 'shortcode_zoomcomp_360' ] );
+
+		wp_enqueue_script( 'jquery' );
+		wp_enqueue_script( 'gallery_360', plugins_url( 'axZm/extensions/jquery.axZm.360Gallery.js', __FILE__ ) );
+		wp_enqueue_style( 'gallery_360', plugins_url( 'axZm/extensions/jquery.axZm.360Gallery.css', __FILE__ ) );
+		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
+		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
+		wp_enqueue_script( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/lib/jquery.axZm.thumbSlider.js', __FILE__ ) );
+		wp_enqueue_style( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/skins/default/jquery.axZm.thumbSlider.css', __FILE__ ) );
+		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ) );
+		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
+
+		?>
+		<div id="playerWrap">
+			<div id="axZmPlayerContainer">
+				<!-- This div will be removed after anything is loaded into "content" div -->
+				<div style="padding:20px; color: #000000; font-size: 16pt">
+					<?php _e( 'Loading, please wait...', 'zoomcomp' ); ?>
+				</div>
+			</div>
+
+			<div id="spinGalleryContainer">
+				<!-- Thumb slider -->
+				<div id="spinGallery">
+				</div>
+			</div>
+		</div>
+
+		<style media="screen">
+			<?php if( 'vertical' == $thumbslider_orientation ): ?>
+			#playerWrap{
+				padding-right: 120px;
+				height: <?php echo $height; ?>;
+				position: relative;
+			}
+
+			#spinGalleryContainer{
+				position: absolute;
+				z-index: 11;
+				width: 120px;
+				height: 100%;
+				right: 0px;
+				top: 0px;
+			}
+
+			#spinGallery{
+				position: absolute;
+				right: 0;
+				width: 110px;
+				height: 100%;
+				background-color: #FFFFFF;
+				overflow: hidden;
+			}
+
+			#highlightsText{
+				position: absolute; top: -23px; width: 90px; height: 17px; right: 0; text-align: left;
+				padding: 2px 5px; font-family: monospace;
+				background-color: #F2D3A2;
+			}
+			<?php else: ?>
+			.axZmFsSpaceBottom { height: 100px !important; }
+			<?php endif; ?>
+		</style>
+
+		<script type="text/javascript">
+			jQuery(document).ready(function() {
+				// Load 360 gallery and first spin
+				jQuery.axZm360Gallery ({
+					axZmPath: "auto", // Path to /axZm/ directory, e.g. "/test/axZm/"
+					galleryData: <?php echo json_encode($galleryData); ?>,
+					galleryHotspots: <?php echo json_encode($galleryHotspots); ?>,
+
+
+					divID: "axZmPlayerContainer", // The ID of the element (placeholder) where AJAX-ZOOM has to be inserted into
+					embedResponsive: true, // if divID is responsive, set this to true
+					spinGalleryContainerID: "spinGalleryContainer", // Parent container of gallery div
+					spinGalleryID: "spinGallery",
+					spinGallery_tempID: "spinGallery_temp",
+					backgroundColor: "#FFFFFF",
+
+					// use axZmThumbSlider extension for the thumbs, set false to disable
+					axZmThumbSlider: true,
+
+					// Options passed to $.axZmThumbSlider
+					// For more information see /axZm/extensions/axZmThumbSlider/
+					axZmThumbSliderParam: {
+						btn: false,
+						orientation: "<?php echo $thumbslider_orientation; ?>",
+						scrollbar: true,
+						scrollbarMargin: 10,
+						wrapStyle: {borderWidth: 0}
+						//scrollbarClass: "axZmThumbSlider_scrollbar_thin"
+					},
+
+					// try to open AJAX-ZOOM at browsers fullscreen mode
+					fullScreenApi: true,
+
+					// Show 360 thumb gallery at fullscreen mode,
+					// possible values: "bottom", "top", "left", "right" or false
+					thumbsAtFullscreen: <?php echo $thumbs_at_fullscreen ? "'$thumbs_at_fullscreen'" : 'false'; ?>,
+
+					thumbsCache: true, // cache thumbnails
+					thumbWidth: 87, // width of the thumbnail image
+					thumbHeight: 87, // height of the thumbnail image
+					thumbQual: 90, // jpg quality of the thumbnail image
+					thumbMode: false, // possible values: "contain", "cover" or false
+					thumbBackColor: "#FFFFFF", // background color of the thumb if thumbMode is set to "contain"
+					thumbRetina: true, // true will double the resolution of the thumbnails
+					thumbDescr: true, // Show thumb description
+
+					// Custom description of the thumbs
+					thumbDescrObj: <?php echo json_encode($galleryDescriptions); ?>,
+
+					thumbIcon: true // Show 360 or 3D icon for the thumbs
+				});
+			});
+		</script>
+		<?php
+	}
+
+
+
+	/**
 	 * Generate shortcode content for 360º slider
 	 */
 	public function shortcode_zoomcomp_360( $atts ) {
 		$id  = $this->get_next_el_id();
 		$url = add_query_arg( array_merge( $atts, ['action' => '360_slider', 'container_id' => $id] ), admin_url('admin-ajax.php') );
 		return '<iframe src="'.$url.'" id="'.$id.'" frameborder="none" width="100%" allowFullScreen></iframe>';
+	}
+
+	public function shortcode_gallery_360( $atts ) {
+		global $galleryData, $galleryHotspots, $galleryDescriptions;
+
+		extract( shortcode_atts( [
+			'slider_id' => 0,
+			'description' => ''
+		], $atts ));
+
+		if( !$slider_id ) return;
+
+		$galleryData[] = ['image360', self::pic_dir().'/360/'.$slider_id];
+		$galleryHotspots[$slider_id] = add_query_arg(['action' => 'get_hotspot_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) );
+		if('' != $description) $galleryDescriptions[$slider_id] = $description;
+
 	}
 
 	/**
