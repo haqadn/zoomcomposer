@@ -210,8 +210,29 @@ class ZoomComposer {
 			'crop'                    => 'no',
 			'slider_id'               => 0,
 			'thumbslider_orientation' => 'vertical',
-			'container_id'            => ''
+			'container_id'            => '',
+			'mnavi_gravity'           => 'bottom',
+			'slider_navi'             => 'yes',
+			'map'                     => 'topLeft',
+			'm_pan_spin'              => 'yes',
+			'm_zoom'                  => 'yes',
+			'm_spin_play'             => 'yes'
 		], $_GET) );
+
+		$navi_order = [
+			'mSpin'        => 5,
+			'mPan'         => 20,
+			'mZoomIn'      => 5,
+			'mZoomOut'     => 20,
+			'mMap'         => 5,
+			'mSpinPlay'    => 20
+		];
+
+		if( $m_pan_spin == 'no' ) unset($navi_order['mSpin'], $navi_order['mPan'] );
+		if( $m_zoom == 'no' ) unset($navi_order['mZoomIn'], $navi_order['mZoomOut'] );
+		if( $map == 'no' ) unset($navi_order['mMap'] );
+		if( $m_spin_play == 'no' ) unset($navi_order['mSpinPlay'] );
+
 
 		global $post;
 		$player_id = $this->get_next_el_id();
@@ -223,6 +244,8 @@ class ZoomComposer {
 
 		$hotspot = 'no' == $hotspot ? false : true;
 		$crop = 'no' == $crop ? false : true;
+		$slider_navi = 'no' == $slider_navi ? false : true;
+		$map = 'no' == $map ? false : $map;
 
 		if( !$slider_id ) return;
 
@@ -276,12 +299,9 @@ class ZoomComposer {
 								<ul></ul>
 							</div>
 						</div>
-
-						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header mnavi" style="width: 100%;"></div>
 					</div>
 					<?php else : ?>
 						<div id="<?php echo $player_id; ?>" class="axZmBorderBox" style="width: 100%; min-height: <?php echo $height; ?>;"><?php _e( "Loading...", "zoomcomp" ); ?></div>
-						<div id='<?php echo $navigation_id; ?>' class="ui-widget-header mnavi" style="width: 100%;"></div>
 					<?php endif; ?>
 
 					<script type="text/javascript">
@@ -345,30 +365,37 @@ class ZoomComposer {
 								//jQuery.axZm.fullScreenCornerButton = false;
 								jQuery.axZm.fullScreenExitText = false;
 
+								jQuery.axZm.gallerySlideNavi = <?php echo $slider_navi ? 'true' : 'false' ?>;
+
+								<?php if( $map ): ?>
+								jQuery.axZm.mapPos = '<?php echo $map ?>';
+								<?php else : ?>
+								jQuery.axZm.useMap = false;
+								<?php endif; ?>
+
+
 								if (typeof jQuery.axZm.mNavi == 'object'){
 									jQuery.axZm.mNavi.enabled = true; // enable AJAX-ZOOM mNavi
 									jQuery.axZm.mNavi.alt.enabled = true; // enable button descriptions
 									jQuery.axZm.mNavi.fullScreenShow = true; // show at fullscreen too
 									jQuery.axZm.mNavi.mouseOver = true; // should be alsways visible
-									jQuery.axZm.mNavi.gravity = 'bottom'; // position of AJAX-ZOOM mNavi
+									jQuery.axZm.mNavi.gravity = '<?php echo $mnavi_gravity; ?>'; // position of AJAX-ZOOM mNavi
 									jQuery.axZm.mNavi.offsetVert = 5; // vertical offset
 									jQuery.axZm.mNavi.offsetVertFS = 30; // vertical offset at fullscreen
-									jQuery.axZm.mNavi.parentID = '<?php echo $navigation_id; ?>';
 
 									// Define order and space between the buttons
 									if (jQuery.axZm.spinMod){ // if it is 360 or 3D
-										jQuery.axZm.mNavi.order = {
-											mSpin: 5, mPan: 20, mZoomIn: 5, mZoomOut: 20, mReset: 5, mMap: 5, mSpinPlay: 20
-										};
+										jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>
 									}else{
-										jQuery.axZm.mNavi.order = {
-											mZoomIn: 5, mZoomOut: 5, mReset: 20, mGallery: 5, mMap: 20
-										};
+										<?php
+										unset($navi_order['mSpin']);
+										unset($navi_order['mPan']);
+										unset($navi_order['mSpinPlay']);
+										$navi_order['mGallery'] = 5;
+										?>
+										jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>;
 									}
 								}
-
-								// Chnage position of the map
-								//jQuery.axZm.mapPos = "bottomLeft";
 
 								// Set extra space to the right at fullscreen mode for the crop gallery
 								jQuery.axZm.fullScreenSpace = {

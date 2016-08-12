@@ -41,6 +41,10 @@ a:active, a:hover {
 	overflow: auto;
 }
 
+.axZm_zoomMapHolder {
+	margin-bottom: 35px;
+}
+
 .upload-dropzone {
 	position: absolute;
 	bottom: 50px;
