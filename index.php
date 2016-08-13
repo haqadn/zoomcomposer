@@ -668,7 +668,7 @@ class ZoomComposer {
 			"name" => __( "Zoom Hover Thumb Gallery", "zoomcomp" ),
 			"base" => "zoomcomp_thumb_hover_zoom_gallery",
 			"show_settings_on_create" => true,
-			"category" => __( "Structure", "zoomcomp"),
+			"category" => __( "Zoom Comp", "zoomcomp"),
 			"params" => [
 				[
 					"type" => "textfield",
@@ -701,7 +701,7 @@ class ZoomComposer {
 		vc_map( [
 			"name" => __( "Zoom Hover Thumb Image", "zoomcomp" ),
 			"base" => "zoomcomp_thumb_hover_zoom_item",
-			"category" => __( "Content", "zoomcomp"),
+			"category" => __( "Zoom Comp", "zoomcomp"),
 			"params" => [
 				[
 					"type" => "textfield",
@@ -756,7 +756,7 @@ class ZoomComposer {
 		vc_map( [
 			'name' => __( 'Gallery Button', 'zoomcomp' ),
 			'base' => 'zoomcomp_gallery_button',
-			'category' => __( 'Content', 'zoomcomp' ),
+			'category' => __( 'Zoom Comp', 'zoomcomp' ),
 			'params' => [
 				[
 					'type' => 'dropdown',
@@ -806,7 +806,7 @@ class ZoomComposer {
 		vc_map( [
 			'name' => __( 'ZoomComp Gallery', 'zoomcomp' ),
 			'base' => 'zoomcomp_gallery',
-			'category' => __( 'Contant', 'zoomcomp' ),
+			'category' => __( 'Zoom Comp', 'zoomcomp' ),
 			'as_parent' => ['only' => 'zoomcomp_360,zoomcomp_video,zoomcomp_thumb_hover_zoom_item'],
 			'params' => [
 				[
@@ -828,7 +828,7 @@ class ZoomComposer {
 		vc_map( [
 			'name' => __( '360º Slider', 'zoomcomp' ),
 			'base' => 'zoomcomp_360',
-			'category' => __( 'Content', 'zoomcomp' ),
+			'category' => __( 'Zoom Comp', 'zoomcomp' ),
 			'params' => [
 				[
 					'type' => 'dropdown',
@@ -908,7 +908,7 @@ class ZoomComposer {
 			'name' => __( 'Gallery Video', 'zoomcomp' ),
 			'base' => 'zoomcomp_video',
 			'as_child' => ['only' => 'zoomcomp_gallery'],
-			'category' => __( 'Contant', 'zoomcomp' ),
+			'category' => __( 'Zoom Comp', 'zoomcomp' ),
 			'params' => [
 				[
 					'type' => 'textfield',
