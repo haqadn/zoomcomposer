@@ -170,6 +170,7 @@ class ZoomComposer {
 	public function shortcode_gallery_button( $atts, $content ) {
 		extract( shortcode_atts( [
 			'images'     => '',
+			'slider_id'  => '',
 			'class'      => '',
 			'type'       => 'regular',
 			'element'    => 'link',
@@ -190,7 +191,7 @@ class ZoomComposer {
 			$qstring = http_build_query([ 'zoomData' => $images ]);
 		}
 		elseif( '3d' == $type ) {
-			$qstring = http_build_query([ '3dDir' => self::pic_dir().'/360/'.trim($images) ]);
+			$qstring = http_build_query([ '3dDir' => self::pic_dir().'/360/'.trim($slider_id) ]);
 		}
 
 		$axzm_dir = plugins_url( 'axZm/', __FILE__ );
