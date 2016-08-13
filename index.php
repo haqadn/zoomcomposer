@@ -733,9 +733,195 @@ class ZoomComposer {
 					"type" => "attach_image",
 					"heading" => __( "Image", "zoomcomp" ),
 					"param_name" => "attachment_id"
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Description', 'zoomcomp' ),
+					'param_name' => 'description'
 				]
 			]
 		] );
+
+		$slider_posts = get_posts( [
+			'posts_per_page'   => -1,
+			'post_type'        => '360_gallery',
+			'post_status'      => 'publish'
+		] );
+
+		$sliders = [];
+		foreach( $slider_posts as $slide ){
+			$sliders[$slide->post_title] = $slide->ID;
+		}
+
+		vc_map( [
+			'name' => __( 'Gallery Button', 'zoomcomp' ),
+			'base' => 'zoomcomp_gallery_button',
+			'category' => __( 'Content', 'zoomcomp' ),
+			'params' => [
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Content Type', 'zoomcomp' ),
+					'param_name' => 'type',
+					'value' => ['regular', '3d']
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( '360º Slider', 'zoomcomp' ),
+					'param_name' => 'slider_id',
+					'value' => $sliders,
+					'dependency' => [
+						'element' => 'type',
+						'value' => ['3d']
+					]
+				],
+				[
+					'type' => 'attach_images',
+					'heading' => __( 'Images', 'zoomcomp' ),
+					'param_name' => 'images',
+					'dependency' => [
+						'element' => 'type',
+						'value' => ['regular']
+					]
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'CSS Class', 'zoomcomp' ),
+					'param_name' => 'class'
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Element', 'zoomcomp' ),
+					'param_name' => 'element',
+					'value' => ['link', 'button']
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Target', 'zoomcomp' ),
+					'param_name' => 'target',
+					'value' => 'window'
+				]
+			]
+		]);
+
+		vc_map( [
+			'name' => __( 'ZoomComp Gallery', 'zoomcomp' ),
+			'base' => 'zoomcomp_gallery',
+			'category' => __( 'Contant', 'zoomcomp' ),
+			'as_parent' => ['only' => 'zoomcomp_360,zoomcomp_video,zoomcomp_thumb_hover_zoom_item'],
+			'params' => [
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Thumbslider Orientation', 'zoomcomp' ),
+					'param_name' => 'thumbslider_orientation',
+					'value' => ['vertical', 'horizontal']
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Height', 'zoomcomp' ),
+					'param_name' => 'height',
+					'value' => '400px'
+				]
+			],
+			'js_view' => 'VcColumnView'
+		]);
+
+		vc_map( [
+			'name' => __( '360º Slider', 'zoomcomp' ),
+			'base' => 'zoomcomp_360',
+			'category' => __( 'Content', 'zoomcomp' ),
+			'params' => [
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Slider', 'zoomcomp' ),
+					'param_name' => 'slider_id',
+					'value' => $sliders
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Height', 'zoomcomp' ),
+					'param_name' => 'height',
+					'value' => '400px'
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Hotspot', 'zoomcomp' ),
+					'param_name' => 'hotspot',
+					'value' => ['yes', 'no']
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Crop', 'zoomcomp' ),
+					'param_name' => 'crop',
+					'value' => ['no', 'yes']
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Thumbslider Orientation', 'zoomcomp' ),
+					'param_name' => 'thumbslider_orientation',
+					'value' => ['vertical', 'horizontal']
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Navbar Gravity', 'zoomcomp' ),
+					'param_name' => 'mnavi_gravity',
+					'value' => ['left', 'bottom'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Slider Navigation', 'zoomcomp' ),
+					'param_name' => 'slider_navi',
+					'value' => ['yes', 'no'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Image Map', 'zoomcomp' ),
+					'param_name' => 'map',
+					'value' => ['topLeft', 'topRight', 'bottomLeft', 'bottomRight', 'none' => 'no'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Pan & Spin Controls', 'zoomcomp' ),
+					'param_name' => 'm_pan_spin',
+					'value' => ['yes', 'no'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Zoom Control', 'zoomcomp' ),
+					'param_name' => 'm_zoom',
+					'value' => ['yes', 'no'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Spin Play/Pause', 'zoomcomp' ),
+					'param_name' => 'm_spin_play',
+					'value' => ['yes', 'no'],
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Description', 'zoomcomp' ),
+					'param_name' => 'description'
+				]
+			]
+		]);
+
+		vc_map( [
+			'name' => __( 'Gallery Video', 'zoomcomp' ),
+			'base' => 'zoomcomp_video',
+			'as_child' => ['only' => 'zoomcomp_gallery'],
+			'category' => __( 'Contant', 'zoomcomp' ),
+			'params' => [
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Video URL', 'zoomcomp' ),
+					'param_name' => 'url'
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Description', 'zoomcomp' ),
+					'param_name' => 'description'
+				]
+			]
+		]);
 	}
 
 	/**
@@ -2203,10 +2389,16 @@ class ZoomComposer {
 	}
 }
 
-
+if ( class_exists( 'WPBakeryShortCodesContainer' ) ) {
+    class WPBakeryShortCode_Zoomcomp_Gallery extends WPBakeryShortCodesContainer {
+    }
+}
 if ( class_exists( 'WPBakeryShortCode' ) ) {
 	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Gallery extends WPBakeryShortCode {}
 	class WPBakeryShortCode_Zoomcomp_Thumb_Hover_Zoom_Item extends WPBakeryShortCode {}
+	class WPBakeryShortCode_Zoomcomp_Gallery_Button extends WPBakeryShortCode {}
+	class WPBakeryShortCode_Zoomcomp_360 extends WPBakeryShortCode {}
+	class WPBakeryShortCode_Zoomcomp_Video extends WPBakeryShortCode {}
 }
 
 
