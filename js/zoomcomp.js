@@ -270,4 +270,16 @@ var ajaxZoom = {};
 				.find('.remove-btn').click(toggle_remove);
 		}
 	});
+
+	function fixThumbContainer() {
+		$('.thumbContainer').each(function(){
+			$(this).css('max-height', '9999px');
+			var height = $(this).find('.azHoverThumb').css('height');
+
+			$(this).css('max-height', height);
+		});
+	}
+
+	$(window).load(fixThumbContainer);
+	$(window).resize(fixThumbContainer);
 })(jQuery);

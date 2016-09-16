@@ -37,6 +37,10 @@ a:active, a:hover {
 	float: left;
 }
 
+.thumbContainer {
+  max-width: 100%;
+}
+
 .mnavi {
 	overflow: auto;
 }
