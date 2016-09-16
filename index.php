@@ -38,8 +38,6 @@ class ZoomComposer {
 		add_action( 'wp_ajax_nopriv_get_hotspot_json', [ $this, 'output_hotspot_json' ]);
 		add_action( 'wp_ajax_get_crop_json', [ $this, 'output_crop_json' ]);
 		add_action( 'wp_ajax_nopriv_get_crop_json', [ $this, 'output_crop_json' ]);
-		add_action( 'wp_ajax_360_slider', [ $this, 'zoomcomp_360' ]);
-		add_action( 'wp_ajax_nopriv_360_slider', [ $this, 'zoomcomp_360' ]);
 		add_action( 'save_post', [ $this, 'update_gallery_images' ]);
 		add_action( 'save_post', [ $this, 'save_hotspot_data' ]);
 		add_action( 'save_post', [ $this, 'save_crop_data' ]);
@@ -360,9 +358,243 @@ class ZoomComposer {
 	 * Generate shortcode content for 360º slider
 	 */
 	public function shortcode_zoomcomp_360( $atts ) {
-		$id  = $this->get_next_el_id();
-		$url = add_query_arg( array_merge( $atts, ['action' => '360_slider', 'container_id' => $id] ), admin_url('admin-ajax.php') );
-		return '<iframe src="'.$url.'" id="'.$id.'" frameborder="none" width="100%" allowFullScreen></iframe>';
+
+		extract( shortcode_atts( [
+			'height'                  => '400px',
+			'hotspot'                 => 'yes',
+			'crop'                    => 'no',
+			'slider_id'               => 0,
+			'thumbslider_orientation' => 'vertical',
+			'container_id'            => '',
+			'mnavi_gravity'           => 'bottom',
+			'slider_navi'             => 'yes',
+			'map'                     => 'topLeft',
+			'm_pan_spin'              => 'yes',
+			'm_zoom'                  => 'yes',
+			'm_spin_play'             => 'yes'
+		], $atts) );
+
+		$navi_order = [
+			'mSpin'        => 5,
+			'mPan'         => 20,
+			'mZoomIn'      => 5,
+			'mZoomOut'     => 20,
+			'mMap'         => 5,
+			'mSpinPlay'    => 20
+		];
+
+		if( $m_pan_spin == 'no' ) unset($navi_order['mSpin'], $navi_order['mPan'] );
+		if( $m_zoom == 'no' ) unset($navi_order['mZoomIn'], $navi_order['mZoomOut'] );
+		if( $map == 'no' ) unset($navi_order['mMap'] );
+		if( $m_spin_play == 'no' ) unset($navi_order['mSpinPlay'] );
+
+
+		global $post;
+		$container_id = $this->get_next_el_id();
+		$player_id = $this->get_next_el_id();
+		$wrapper_id = $this->get_next_el_id();
+		$cropslider_wrap_id = $this->get_next_el_id();
+		$cropslider_id = $this->get_next_el_id();
+		$navigation_id = $this->get_next_el_id();
+
+
+		$hotspot = 'no' == $hotspot ? false : true;
+		$crop = 'no' == $crop ? false : true;
+		$slider_navi = 'no' == $slider_navi ? false : true;
+		$map = 'no' == $map ? false : $map;
+
+		if( !$slider_id ) return;
+
+
+		wp_enqueue_script( 'jquery' );
+
+		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
+		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
+
+		wp_enqueue_script( 'imageCropLoad', plugins_url( 'axZm/extensions/jquery.axZm.imageCropLoad.js', __FILE__ ) );
+
+		wp_enqueue_script( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/lib/jquery.axZm.thumbSlider.js', __FILE__ ) );
+		wp_enqueue_style( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/skins/default/jquery.axZm.thumbSlider.css', __FILE__ ) );
+
+		wp_enqueue_script( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.js', __FILE__ ) );
+		wp_enqueue_style( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.css', __FILE__ ) );
+
+		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ) );
+		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
+
+		ob_start();
+
+		?>
+		<style media="screen">
+			body {
+				padding: 0;
+				background-color: #fff;
+			}
+			body:before, body:after {
+				height: 0 !important;
+				width: 0 !important;
+			}
+		</style>
+		<?php if ($crop): ?>
+		<div id="<?php echo $wrapper_id; ?>" style="<?php if( 'vertical' == $thumbslider_orientation ) echo 'padding-right: 100px;'; ?> position: relative; min-height: <?php echo $height; ?>;">
+			<div id="<?php echo $player_id; ?>" style="height: 100%; position: relative;">
+				<!-- Content inside target will be removed -->
+				<div style="padding: 20px">Loading, please wait...</div>
+
+			</div>
+
+			<!-- Thumb slider with croped images -->
+			<div id="<?php echo $cropslider_wrap_id; ?>" class="cropslider_wrap_<?php echo $thumbslider_orientation; ?>">
+				<div id="<?php echo $cropslider_id; ?>">
+					<ul></ul>
+				</div>
+			</div>
+		</div>
+		<?php else : ?>
+			<div id="<?php echo $player_id; ?>" class="axZmBorderBox" style="width: 100%; min-height: <?php echo $height; ?>;"><?php _e( "Loading...", "zoomcomp" ); ?></div>
+		<?php endif; ?>
+
+		<script type="text/javascript">
+		jQuery(document).ready(function(){
+			<?php if ( $crop ) : ?>
+			jQuery("#<?php echo $cropslider_id; ?>").axZmThumbSlider({
+				orientation: "<?php echo $thumbslider_orientation; ?>",
+				btnOver: true,
+				btnHidden: true,
+				btnFwdStyle: {borderRadius: 0, height: 20, bottom: -1, lineHeight: "20px"},
+				btnBwdStyle: {borderRadius: 0, height: 20, top: -1, lineHeight: "20px"},
+
+				thumbLiStyle: {
+					height: 90,
+					width: 90,
+					lineHeight: 90,
+					borderRadius: 0,
+					margin: 3
+				}
+			});
+			<?php endif; ?>
+
+			// AJAX-ZOOM
+			// Create empty jQuery object (no not rename here)
+			var ajaxZoom = {};
+
+			// Define the path to the axZm folder, adjust the path if needed!
+			// ajaxZoom.path = "<?php echo wp_make_link_relative( plugins_url( 'axZm/', __FILE__ ) ); ?>";
+
+			ajaxZoom.parameter = "<?php echo http_build_query(['3dDir' => self::pic_dir().'/360/'.$slider_id]); ?>";
+
+			// Id of element where AJAX-ZOOM will be loaded into
+			ajaxZoom.divID = "<?php echo $player_id; ?>";
+
+			// Define callbacks, for complete list check the docs
+			ajaxZoom.opt = {
+				onLoad: function(){
+
+					<?php if( $crop ): ?>
+					jQuery.axZmImageCropLoad({
+						cropJsonURL: "<?php echo add_query_arg(['action' => 'get_crop_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) ) ?>",
+						sliderID: "<?php echo $cropslider_id; ?>",
+						spinToSpeed: "2500", // as string to override spinDemoTime when clicked on the thumbs
+						spinToMotion: "easeOutQuint", // optionally pass spinToMotion to override spinToMotion set in config file, def. easeOutQuad
+						handleTexts: "default" // would do about the same as commented out below...
+					});
+					<?php endif; ?>
+
+					<?php if( $hotspot ): ?>
+					// This would be the code for additionally loading hotspots made e.g. with example33.php
+					jQuery.fn.axZm.loadHotspotsFromJsFile("<?php echo add_query_arg(['action' => 'get_hotspot_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) ) ?>");
+					<?php endif; ?>
+				},
+				onBeforeStart: function(){
+					if (jQuery.axZm.spinMod){
+						jQuery.axZm.restoreSpeed = 300;
+					}else{
+						jQuery.axZm.restoreSpeed = 0;
+					}
+
+					//jQuery.axZm.fullScreenCornerButton = false;
+					jQuery.axZm.fullScreenExitText = false;
+
+					jQuery.axZm.gallerySlideNavi = <?php echo $slider_navi ? 'true' : 'false' ?>;
+
+					<?php if( $map ): ?>
+					jQuery.axZm.mapPos = '<?php echo $map ?>';
+					<?php else : ?>
+					jQuery.axZm.useMap = false;
+					<?php endif; ?>
+
+
+					if (typeof jQuery.axZm.mNavi == 'object'){
+						jQuery.axZm.mNavi.enabled = true; // enable AJAX-ZOOM mNavi
+						jQuery.axZm.mNavi.alt.enabled = true; // enable button descriptions
+						jQuery.axZm.mNavi.fullScreenShow = true; // show at fullscreen too
+						jQuery.axZm.mNavi.mouseOver = true; // should be alsways visible
+						jQuery.axZm.mNavi.gravity = '<?php echo $mnavi_gravity; ?>'; // position of AJAX-ZOOM mNavi
+						jQuery.axZm.mNavi.offsetVert = 5; // vertical offset
+						jQuery.axZm.mNavi.offsetVertFS = 30; // vertical offset at fullscreen
+
+						// Define order and space between the buttons
+						if (jQuery.axZm.spinMod){ // if it is 360 or 3D
+							jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>
+						}else{
+							<?php
+							unset($navi_order['mSpin']);
+							unset($navi_order['mPan']);
+							unset($navi_order['mSpinPlay']);
+							$navi_order['mGallery'] = 5;
+							?>
+							jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>;
+						}
+					}
+
+					// Set extra space to the right at fullscreen mode for the crop gallery
+					jQuery.axZm.fullScreenSpace = {
+						right: <?php echo 'vertical' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerWidth()' : 0 ?>,
+						top: 0,
+						bottom: <?php echo 'horizontal' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerHeight()' : 0 ?>,
+						left: 0,
+						layout: 1
+					};
+				},
+				onFullScreenSpaceAdded: function(){
+					<?php if( 'vertical' == $thumbslider_orientation ): ?>
+						jQuery("#<?php echo $cropslider_id; ?>")
+							.css({bottom: 0,right: 0, height: "100%", zIndex: 555})
+							.appendTo("#axZmFsSpaceRight");
+					<?php elseif( 'horizontal' == $thumbslider_orientation ) : ?>
+						jQuery("#<?php echo $cropslider_id; ?>")
+							.css({top: 4, left: 0, zIndex: 555})
+							.appendTo("#axZmFsSpaceBottom");
+					<?php endif; ?>
+
+
+				},
+				onFullScreenClose: function(){
+					jQuery.fn.axZm.tapShow();
+
+					jQuery("#<?php echo $cropslider_id; ?>")
+					.css({bottom: "", right: "", zIndex: ""})
+					.appendTo("#<?php echo $cropslider_wrap_id; ?>");
+				},
+				onFullScreenCloseEndFromRel: function(){
+					// Restore position of the slider
+					jQuery("#<?php echo $cropslider_id; ?>")
+					.css({bottom: "", right: "", zIndex: ""})
+					.appendTo("#<?php echo $cropslider_wrap_id; ?>");
+				},
+				onFullScreenStart: function(){
+					jQuery('#<?php echo $container_id; ?>', window.parent.document).height(jQuery(document).height());
+				}
+			};
+
+			// Load responsive
+			window.fullScreenStartSplash = {enable: false, className: false, opacity: 0.75};
+			jQuery.fn.axZm.openFullScreen(ajaxZoom.path, ajaxZoom.parameter, ajaxZoom.opt, ajaxZoom.divID, true, false);
+		});
+		</script>
+		<?php
+
+		return ob_get_clean();
 	}
 
 	/**
@@ -410,255 +642,6 @@ class ZoomComposer {
 		}
 	}
 
-	/**
-	 * Display a 360º element.
-	 */
-	public function zoomcomp_360( ) {
-		extract( shortcode_atts( [
-			'height'                  => '400px',
-			'hotspot'                 => 'yes',
-			'crop'                    => 'no',
-			'slider_id'               => 0,
-			'thumbslider_orientation' => 'vertical',
-			'container_id'            => '',
-			'mnavi_gravity'           => 'bottom',
-			'slider_navi'             => 'yes',
-			'map'                     => 'topLeft',
-			'm_pan_spin'              => 'yes',
-			'm_zoom'                  => 'yes',
-			'm_spin_play'             => 'yes'
-		], $_GET) );
-
-		$navi_order = [
-			'mSpin'        => 5,
-			'mPan'         => 20,
-			'mZoomIn'      => 5,
-			'mZoomOut'     => 20,
-			'mMap'         => 5,
-			'mSpinPlay'    => 20
-		];
-
-		if( $m_pan_spin == 'no' ) unset($navi_order['mSpin'], $navi_order['mPan'] );
-		if( $m_zoom == 'no' ) unset($navi_order['mZoomIn'], $navi_order['mZoomOut'] );
-		if( $map == 'no' ) unset($navi_order['mMap'] );
-		if( $m_spin_play == 'no' ) unset($navi_order['mSpinPlay'] );
-
-
-		global $post;
-		$player_id = $this->get_next_el_id();
-		$wrapper_id = $this->get_next_el_id();
-		$cropslider_wrap_id = $this->get_next_el_id();
-		$cropslider_id = $this->get_next_el_id();
-		$navigation_id = $this->get_next_el_id();
-
-
-		$hotspot = 'no' == $hotspot ? false : true;
-		$crop = 'no' == $crop ? false : true;
-		$slider_navi = 'no' == $slider_navi ? false : true;
-		$map = 'no' == $map ? false : $map;
-
-		if( !$slider_id ) return;
-
-
-		wp_enqueue_script( 'jquery' );
-
-		wp_enqueue_script( 'ajaxzoom', plugins_url( 'axZm/jquery.axZm.js', __FILE__ ) );
-		wp_enqueue_style( 'ajaxzoom', plugins_url( 'axZm/axZm.css', __FILE__ ) );
-
-		wp_enqueue_script( 'imageCropLoad', plugins_url( 'axZm/extensions/jquery.axZm.imageCropLoad.js', __FILE__ ) );
-
-		wp_enqueue_script( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/lib/jquery.axZm.thumbSlider.js', __FILE__ ) );
-		wp_enqueue_style( 'thumbslider', plugins_url( 'axZm/extensions/axZmThumbSlider/skins/default/jquery.axZm.thumbSlider.css', __FILE__ ) );
-
-		wp_enqueue_script( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.js', __FILE__ ) );
-		wp_enqueue_style( 'hover-thumb', plugins_url( 'axZm/extensions/jquery.axZm.hoverThumb.css', __FILE__ ) );
-
-		wp_enqueue_script( 'zoomcomposer', plugins_url( 'js/zoomcomp.js', __FILE__ ) );
-		wp_enqueue_style( 'zoomcomposer', plugins_url( 'css/zoomcomp.css', __FILE__ ) );
-
-		?>
-			<!DOCTYPE html>
-			<html>
-				<head>
-					<meta charset="utf-8">
-					<title><?php _e('360º Slider', 'zoomcomp' ); ?></title>
-					<?php do_action('wp_head'); ?>
-					<style media="screen">
-						body {
-							padding: 0;
-							background-color: #fff;
-						}
-						body:before, body:after {
-							height: 0 !important;
-							width: 0 !important;
-						}
-					</style>
-				</head>
-				<body>
-					<?php if ($crop): ?>
-					<div id="<?php echo $wrapper_id; ?>" style="<?php if( 'vertical' == $thumbslider_orientation ) echo 'padding-right: 100px;'; ?> position: relative; min-height: <?php echo $height; ?>;">
-						<div id="<?php echo $player_id; ?>" style="height: 100%; position: relative;">
-							<!-- Content inside target will be removed -->
-							<div style="padding: 20px">Loading, please wait...</div>
-
-						</div>
-
-						<!-- Thumb slider with croped images -->
-						<div id="<?php echo $cropslider_wrap_id; ?>" class="cropslider_wrap_<?php echo $thumbslider_orientation; ?>">
-							<div id="<?php echo $cropslider_id; ?>">
-								<ul></ul>
-							</div>
-						</div>
-					</div>
-					<?php else : ?>
-						<div id="<?php echo $player_id; ?>" class="axZmBorderBox" style="width: 100%; min-height: <?php echo $height; ?>;"><?php _e( "Loading...", "zoomcomp" ); ?></div>
-					<?php endif; ?>
-
-					<script type="text/javascript">
-					jQuery(document).ready(function(){
-						<?php if ( $crop ) : ?>
-						jQuery("#<?php echo $cropslider_id; ?>").axZmThumbSlider({
-							orientation: "<?php echo $thumbslider_orientation; ?>",
-							btnOver: true,
-							btnHidden: true,
-							btnFwdStyle: {borderRadius: 0, height: 20, bottom: -1, lineHeight: "20px"},
-							btnBwdStyle: {borderRadius: 0, height: 20, top: -1, lineHeight: "20px"},
-
-							thumbLiStyle: {
-								height: 90,
-								width: 90,
-								lineHeight: 90,
-								borderRadius: 0,
-								margin: 3
-							}
-						});
-						<?php endif; ?>
-
-						// AJAX-ZOOM
-						// Create empty jQuery object (no not rename here)
-						var ajaxZoom = {};
-
-						// Define the path to the axZm folder, adjust the path if needed!
-						// ajaxZoom.path = "<?php echo wp_make_link_relative( plugins_url( 'axZm/', __FILE__ ) ); ?>";
-
-						ajaxZoom.parameter = "<?php echo http_build_query(['3dDir' => self::pic_dir().'/360/'.$slider_id]); ?>";
-
-						// Id of element where AJAX-ZOOM will be loaded into
-						ajaxZoom.divID = "<?php echo $player_id; ?>";
-
-						// Define callbacks, for complete list check the docs
-						ajaxZoom.opt = {
-							onLoad: function(){
-
-								<?php if( $crop ): ?>
-								jQuery.axZmImageCropLoad({
-									cropJsonURL: "<?php echo add_query_arg(['action' => 'get_crop_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) ) ?>",
-									sliderID: "<?php echo $cropslider_id; ?>",
-									spinToSpeed: "2500", // as string to override spinDemoTime when clicked on the thumbs
-									spinToMotion: "easeOutQuint", // optionally pass spinToMotion to override spinToMotion set in config file, def. easeOutQuad
-									handleTexts: "default" // would do about the same as commented out below...
-								});
-								<?php endif; ?>
-
-								<?php if( $hotspot ): ?>
-								// This would be the code for additionally loading hotspots made e.g. with example33.php
-								jQuery.fn.axZm.loadHotspotsFromJsFile("<?php echo add_query_arg(['action' => 'get_hotspot_json', 'post_id' => $slider_id], admin_url( 'admin-ajax.php' ) ) ?>");
-								<?php endif; ?>
-							},
-							onBeforeStart: function(){
-								if (jQuery.axZm.spinMod){
-									jQuery.axZm.restoreSpeed = 300;
-								}else{
-									jQuery.axZm.restoreSpeed = 0;
-								}
-
-								//jQuery.axZm.fullScreenCornerButton = false;
-								jQuery.axZm.fullScreenExitText = false;
-
-								jQuery.axZm.gallerySlideNavi = <?php echo $slider_navi ? 'true' : 'false' ?>;
-
-								<?php if( $map ): ?>
-								jQuery.axZm.mapPos = '<?php echo $map ?>';
-								<?php else : ?>
-								jQuery.axZm.useMap = false;
-								<?php endif; ?>
-
-
-								if (typeof jQuery.axZm.mNavi == 'object'){
-									jQuery.axZm.mNavi.enabled = true; // enable AJAX-ZOOM mNavi
-									jQuery.axZm.mNavi.alt.enabled = true; // enable button descriptions
-									jQuery.axZm.mNavi.fullScreenShow = true; // show at fullscreen too
-									jQuery.axZm.mNavi.mouseOver = true; // should be alsways visible
-									jQuery.axZm.mNavi.gravity = '<?php echo $mnavi_gravity; ?>'; // position of AJAX-ZOOM mNavi
-									jQuery.axZm.mNavi.offsetVert = 5; // vertical offset
-									jQuery.axZm.mNavi.offsetVertFS = 30; // vertical offset at fullscreen
-
-									// Define order and space between the buttons
-									if (jQuery.axZm.spinMod){ // if it is 360 or 3D
-										jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>
-									}else{
-										<?php
-										unset($navi_order['mSpin']);
-										unset($navi_order['mPan']);
-										unset($navi_order['mSpinPlay']);
-										$navi_order['mGallery'] = 5;
-										?>
-										jQuery.axZm.mNavi.order = <?php echo json_encode($navi_order); ?>;
-									}
-								}
-
-								// Set extra space to the right at fullscreen mode for the crop gallery
-								jQuery.axZm.fullScreenSpace = {
-									right: <?php echo 'vertical' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerWidth()' : 0 ?>,
-									top: 0,
-									bottom: <?php echo 'horizontal' == $thumbslider_orientation ? 'jQuery("#'.$cropslider_id.'").outerHeight()' : 0 ?>,
-									left: 0,
-									layout: 1
-								};
-							},
-							onFullScreenSpaceAdded: function(){
-								<?php if( 'vertical' == $thumbslider_orientation ): ?>
-									jQuery("#<?php echo $cropslider_id; ?>")
-										.css({bottom: 0,right: 0, height: "100%", zIndex: 555})
-										.appendTo("#axZmFsSpaceRight");
-								<?php elseif( 'horizontal' == $thumbslider_orientation ) : ?>
-									jQuery("#<?php echo $cropslider_id; ?>")
-										.css({top: 4, left: 0, zIndex: 555})
-										.appendTo("#axZmFsSpaceBottom");
-								<?php endif; ?>
-
-
-							},
-							onFullScreenClose: function(){
-								jQuery.fn.axZm.tapShow();
-
-								jQuery("#<?php echo $cropslider_id; ?>")
-								.css({bottom: "", right: "", zIndex: ""})
-								.appendTo("#<?php echo $cropslider_wrap_id; ?>");
-							},
-							onFullScreenCloseEndFromRel: function(){
-								// Restore position of the slider
-								jQuery("#<?php echo $cropslider_id; ?>")
-								.css({bottom: "", right: "", zIndex: ""})
-								.appendTo("#<?php echo $cropslider_wrap_id; ?>");
-							},
-							onFullScreenStart: function(){
-								jQuery('#<?php echo $container_id; ?>', window.parent.document).height(jQuery(document).height());
-							}
-						};
-
-						// Load responsive
-						window.fullScreenStartSplash = {enable: false, className: false, opacity: 0.75};
-						jQuery.fn.axZm.openFullScreen(ajaxZoom.path, ajaxZoom.parameter, ajaxZoom.opt, ajaxZoom.divID, true, false);
-					});
-					</script>
-
-				</body>
-			</html>
-		<?php
-
-		exit;
-	}
 
 	/**
 	 * Map shortcodes in visual composer.
