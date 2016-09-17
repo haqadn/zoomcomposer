@@ -740,6 +740,7 @@ class ZoomComposer {
 			'name' => __( 'Gallery Button', 'zoomcomp' ),
 			'base' => 'zoomcomp_gallery_button',
 			'category' => __( 'Zoom Comp', 'zoomcomp' ),
+			'content_element' => __( 'Text', 'zoomcomp' ),
 			'params' => [
 				[
 					'type' => 'dropdown',
@@ -782,6 +783,12 @@ class ZoomComposer {
 					'heading' => __( 'Target', 'zoomcomp' ),
 					'param_name' => 'target',
 					'value' => 'window'
+				],
+				[
+					'type' => 'textarea_html',
+					'heading' => __( 'Text', 'zoomcomp' ),
+					'param_name' => 'content',
+					'value' => ''
 				]
 			]
 		]);
