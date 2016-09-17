@@ -280,6 +280,13 @@ var ajaxZoom = {};
 		});
 	}
 
+	$(window).load(function(){
+		$('.azHoverThumbTrap').click(function(){
+			var el = $(this).closest('.thumbContainer');
+			if(el.attr('data-qstring'))
+			jQuery.fn.axZm.openFullScreen(el.attr('data-axzm-dir'), el.attr('data-qstring'), {}, el.attr('data-target'), false )
+		});
+	});
 	$(window).load(fixThumbContainer);
 	$(window).resize(fixThumbContainer);
 })(jQuery);

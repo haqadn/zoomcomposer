@@ -133,6 +133,9 @@ class ZoomComposer {
 		extract( shortcode_atts( [
 			'attachment_id' => 0,
 			'image_quality' => 90,
+			'type'          => 'default',
+			'slider_id'     => 0,
+			'target'        => 'window',
 			'thumb_width'   => $thumb_width,
 			'thumb_height'  => $thumb_height,
 			'thumb_group'   => $thumb_group ], $atts ), EXTR_OVERWRITE );
@@ -154,11 +157,20 @@ class ZoomComposer {
 		$description = htmlspecialchars( $attachment->post_excerpt );
 
 		ob_start();
-		?>
-		<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
-			<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo wp_make_link_relative( $image[0] ); ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
-		</div>
-		<?php
+
+		if( 'default' == $type ):?>
+			<div class="thumbContainer" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
+				<img class="azHoverThumb" data-group="<?php echo $thumb_group; ?>" data-descr="<?php echo $description; ?>" data-img="<?php echo wp_make_link_relative( $image[0] ); ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
+			</div>
+		<?php elseif( '3d' == $type ):
+			$qstring = http_build_query([ '3dDir' => self::pic_dir().'/360/'.trim($slider_id) ]);
+			$axzm_dir = wp_make_link_relative( plugins_url( 'axZm/', __FILE__ ) );
+			$function_call_string = "jQuery.fn.axZm.openFullScreen('$axzm_dir', '$qstring', {}, '$target', false );";
+			?>
+			<div class="thumbContainer" data-axzm-dir="<?php echo $axzm_dir; ?>" data-qstring="<?php echo $qstring; ?>" data-target="<?php echo $target; ?>" style="<?php echo "width:{$thumb_width}px; height: {$thumb_height}px;" ?>">
+				<img class="azHoverThumb" data-descr="<?php echo $description; ?>" src="<?php echo $zoomload_url; ?>" alt="<?php echo $alt; ?>" />
+			</div>
+		<?php endif;
 		return ob_get_clean();
 	}
 
@@ -681,6 +693,17 @@ class ZoomComposer {
 			]
 		] );
 
+		$slider_posts = get_posts( [
+			'posts_per_page'   => -1,
+			'post_type'        => '360_gallery',
+			'post_status'      => 'publish'
+			] );
+
+			$sliders = [];
+			foreach( $slider_posts as $slide ){
+				$sliders[$slide->post_title] = $slide->ID;
+			}
+
 		vc_map( [
 			"name" => __( "Zoom Hover Thumb Image", "zoomcomp" ),
 			"base" => "zoomcomp_thumb_hover_zoom_item",
@@ -721,20 +744,35 @@ class ZoomComposer {
 					'type' => 'textfield',
 					'heading' => __( 'Description', 'zoomcomp' ),
 					'param_name' => 'description'
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( 'Opening Type', 'zoomcomp' ),
+					'param_name' => 'type',
+					'value' => ['default', '3d'],
+				],
+				[
+					'type' => 'dropdown',
+					'heading' => __( '360º Slider', 'zoomcomp' ),
+					'param_name' => 'slider_id',
+					'value' => $sliders,
+					'dependency' => [
+						'element' => 'type',
+						'value' => ['3d']
+					]
+				],
+				[
+					'type' => 'textfield',
+					'heading' => __( 'Target', 'zoomcomp' ),
+					'param_name' => 'target',
+					'value' => 'window',
+					'dependency' => [
+						'element' => 'type',
+						'value' => ['3d']
+					]
 				]
 			]
 		] );
-
-		$slider_posts = get_posts( [
-			'posts_per_page'   => -1,
-			'post_type'        => '360_gallery',
-			'post_status'      => 'publish'
-		] );
-
-		$sliders = [];
-		foreach( $slider_posts as $slide ){
-			$sliders[$slide->post_title] = $slide->ID;
-		}
 
 		vc_map( [
 			'name' => __( 'Gallery Button', 'zoomcomp' ),
