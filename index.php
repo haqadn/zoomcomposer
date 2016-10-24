@@ -1021,7 +1021,8 @@ class ZoomComposer {
 		add_meta_box( 'gallery_images', __( 'Images', 'zoomcomp' ), [ $this, 'gallery_image_upload_metabox_content' ], '360_gallery', 'normal', 'high' );
 		$zoomcomp_upload_dir = $upload_dir['basedir'].'/zoomcomp/360/'.$post->ID;
 
-		if( !empty( glob( $zoomcomp_upload_dir . '/*.*' ) ) ) {
+		$folders = (array) glob( $zoomcomp_upload_dir . '/*.*' );
+		if( !empty( $folders ) ) {
 			add_meta_box( 'gallery_360', __( 'Gallery', 'zoomcomp' ), [ $this, 'gallery_metabox_content' ], '360_gallery', 'normal', 'high' );
 			add_meta_box( 'gallery_hotspot', __( 'Hotspots', 'zoomcomp' ), [ $this, 'gallery_hotspot_metabox_content' ], '360_gallery', 'normal', 'low' );
 			add_meta_box( 'gallery_thumb_crop', __( 'Crop Thumbnails', 'zoomcomp' ), [ $this, 'gallery_thumb_crop_metabox_content' ], '360_gallery', 'normal', 'low' );
